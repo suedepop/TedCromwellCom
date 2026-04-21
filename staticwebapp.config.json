@@ -1,0 +1,12 @@
+{
+  "routes": [
+    { "route": "/api/*", "allowedRoles": ["anonymous"] }
+  ],
+  "navigationFallback": {
+    "exclude": ["/api/*", "/_next/*", "/static/*", "/*.{png,jpg,jpeg,gif,svg,ico,webp}"]
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN"
+  }
+}

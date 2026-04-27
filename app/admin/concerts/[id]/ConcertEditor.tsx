@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Concert, Photo, Setlist, TicketStub, Venue } from "@/lib/types";
+import SortablePhotos from "@/components/media/SortablePhotos";
 import UploadDropzone from "@/components/media/UploadDropzone";
 import SetlistSortable from "@/components/concerts/SetlistSortable";
 
@@ -197,39 +198,18 @@ export default function ConcertEditor({ concert, venues }: { concert: Concert; v
         {photos.length > 0 && (
           <>
             <p className="text-xs text-muted">
-              Click the ★ to feature a photo on the concert list card. Default is the first uploaded.
+              Click the ★ to feature a photo on the concert list card. Drag the ⋮⋮ handle to reorder.
             </p>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-              {photos.map((p) => {
-                const isFeatured = (featuredPhotoId ?? photos[0]?.id) === p.id;
-                return (
-                  <div key={p.id} className="relative group">
-                    <img
-                      src={p.thumbnailUrl}
-                      alt=""
-                      className={`rounded border ${isFeatured ? "border-accent ring-1 ring-accent" : "border-border"}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => chooseFeatured(p.id)}
-                      title={isFeatured ? "Featured" : "Make featured"}
-                      className={`absolute top-1 left-1 text-xs px-1.5 rounded ${
-                        isFeatured ? "bg-accent text-bg" : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
-                      }`}
-                    >
-                      ★
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(p.id)}
-                      className="absolute top-1 right-1 text-xs bg-red-600/80 text-white px-1.5 rounded opacity-0 group-hover:opacity-100"
-                    >
-                      ×
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+            <SortablePhotos
+              photos={photos}
+              featuredId={featuredPhotoId}
+              onReorder={(next) => {
+                setPhotos(next);
+                save(next, stubs, setlists, featuredPhotoId);
+              }}
+              onSelectFeatured={chooseFeatured}
+              onRemove={removePhoto}
+            />
           </>
         )}
       </section>

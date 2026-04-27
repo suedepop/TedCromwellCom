@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Photo, TravelEntry } from "@/lib/types";
 import UploadDropzone from "@/components/media/UploadDropzone";
+import SortablePhotos from "@/components/media/SortablePhotos";
 
 const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 const LocationPicker = dynamic(() => import("@/components/travel/LocationPicker"), {
@@ -186,32 +187,18 @@ export default function TravelEntryEditor({ entry }: Props) {
           label="Upload photos (multi-select + drag supported)"
         />
         {photos.length > 0 && (
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-            {photos.map((p) => {
-              const isFeatured = (featuredPhotoId ?? photos[0]?.id) === p.id;
-              return (
-                <div key={p.id} className={`relative group border rounded overflow-hidden ${isFeatured ? "border-accent ring-2 ring-accent/40" : "border-border"}`}>
-                  <img src={p.thumbnailUrl} alt="" className="block w-full" />
-                  <button
-                    type="button"
-                    onClick={() => chooseFeatured(p.id)}
-                    title={isFeatured ? "Featured — click to clear" : "Make featured"}
-                    className={`absolute top-1 left-1 text-xs px-1.5 py-0.5 rounded ${isFeatured ? "bg-accent text-bg" : "bg-black/60 text-white opacity-0 group-hover:opacity-100"}`}
-                  >
-                    {isFeatured ? "★ Featured" : "★"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(p.id)}
-                    className="absolute top-1 right-1 text-xs bg-red-600/80 text-white px-1.5 rounded opacity-0 group-hover:opacity-100"
-                  >
-                    ×
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+          <SortablePhotos
+            photos={photos}
+            featuredId={featuredPhotoId}
+            onReorder={(next) => {
+              setPhotos(next);
+              save(next, featuredPhotoId);
+            }}
+            onSelectFeatured={chooseFeatured}
+            onRemove={removePhoto}
+          />
         )}
+        <p className="text-xs text-muted">Drag the ⋮⋮ handle on top of any photo to reorder.</p>
       </section>
     </div>
   );

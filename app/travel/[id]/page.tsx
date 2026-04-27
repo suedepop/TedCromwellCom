@@ -6,6 +6,7 @@ import PhotoLightbox from "@/components/media/PhotoLightbox";
 import PostBody from "@/components/blog/PostBody";
 import { findTravelEntryBySlugOrId } from "@/lib/travel";
 import { pageMetadata } from "@/lib/metadata";
+import { jsonLdScript, travelEntryJsonLd } from "@/lib/jsonld";
 
 export const dynamic = "force-dynamic";
 

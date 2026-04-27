@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/metadata";
 import { concertEventJsonLd, jsonLdScript } from "@/lib/jsonld";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import Disqus from "@/components/comments/Disqus";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import SetlistBlock from "@/components/concerts/SetlistBlock";
@@ -46,6 +47,16 @@ export default async function ConcertDetail({ params }: { params: { id: string }
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(concertEventJsonLd(concert, venue)) }}
+      />
+      <Breadcrumbs
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Concerts", path: "/concerts" },
+          {
+            name: concertBandLine(concert),
+            path: `/concerts/${concert.slug ?? concert.id}`,
+          },
+        ]}
       />
       {featured && (
         <div className="relative left-1/2 -translate-x-1/2 w-screen h-[250px] -mt-10 mb-2 bg-black overflow-hidden">

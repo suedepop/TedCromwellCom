@@ -1,4 +1,4 @@
-import type { BlogPost, Concert, TravelEntry, Venue } from "./types";
+import type { BlogPost, Concert, Resume, TravelEntry, Venue } from "./types";
 import { SITE_NAME, siteUrl } from "./metadata";
 
 function authorBlock() {
@@ -132,6 +132,96 @@ export function travelEntryJsonLd(entry: TravelEntry): object {
   };
 }
 
-export function jsonLdScript(data: object): string {
+export function siteJsonLd(resume: Resume | null): object[] {
+  const sameAs = [resume?.linkedin, resume?.github, resume?.website]
+    .filter((u): u is string => !!u && u.length > 0);
+  const person = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: resume?.name ?? SITE_NAME,
+    description: resume?.tagline,
+    email: resume?.email ? `mailto:${resume.email}` : undefined,
+    url: siteUrl(),
+    image: siteUrl("/og-default.png"),
+    sameAs: sameAs.length ? sameAs : undefined,
+    jobTitle: resume?.tagline,
+    address: resume?.location ? { "@type": "PostalAddress", addressLocality: resume.location } : undefined,
+  };
+  const website = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: siteUrl(),
+    inLanguage: "en",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${siteUrl("/search")}?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  };
+  return [person, website];
+}
+
+export interface BreadcrumbCrumb {
+  name: string;
+  path: string;
+}
+
+export function breadcrumbJsonLd(crumbs: BreadcrumbCrumb[]): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: c.name,
+      item: siteUrl(c.path),
+    })),
+  };
+}
+
+export function speakableJsonLd(): object {
+  return {
+    "@type": "SpeakableSpecification",
+    cssSelector: ["h1", ".prose p"],
+  };
+}
+
+export function blogPostJsonLdSpeakable(post: BlogPost): object {
+  return { ...(blogPostJsonLd(post) as object), speakable: speakableJsonLd() };
+}
+
+export function resumePersonJsonLd(resume: Resume): object {
+  const sameAs = [resume.linkedin, resume.github, resume.website].filter((u): u is string => !!u);
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: resume.name,
+    description: resume.tagline,
+    email: `mailto:${resume.email}`,
+    url: siteUrl("/resume"),
+    image: siteUrl("/og-default.png"),
+    sameAs: sameAs.length ? sameAs : undefined,
+    address: resume.location ? { "@type": "PostalAddress", addressLocality: resume.location } : undefined,
+    knowsAbout: resume.skills.flatMap((g) => g.skills),
+    alumniOf: resume.education.map((e) => ({
+      "@type": "EducationalOrganization",
+      name: e.organization,
+    })),
+    worksFor: resume.experience[0]
+      ? { "@type": "Organization", name: resume.experience[0].organization }
+      : undefined,
+    hasOccupation: resume.experience.map((e) => ({
+      "@type": "Occupation",
+      name: e.role,
+      occupationLocation: e.location ? { "@type": "Place", name: e.location } : undefined,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      description: e.bullets.join(" "),
+    })),
+  };
+}
+
+export function jsonLdScript(data: object | object[]): string {
   return JSON.stringify(data, (_k, v) => (v === undefined ? undefined : v));
 }

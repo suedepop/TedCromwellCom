@@ -39,6 +39,15 @@ export const metadata: Metadata = {
     images: [siteUrl("/og-default.png")],
   },
   icons: { icon: "/favicon.ico" },
+  alternates: {
+    canonical: siteUrl(),
+    types: {
+      "application/rss+xml": [{ url: siteUrl("/feed.xml"), title: `${SITE_NAME} — RSS` }],
+      "application/opensearchdescription+xml": [
+        { url: siteUrl("/opensearch.xml"), title: SITE_NAME },
+      ],
+    },
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

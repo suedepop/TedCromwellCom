@@ -1,4 +1,5 @@
 import { pageMetadata } from "@/lib/metadata";
+import { jsonLdScript } from "@/lib/jsonld";
 
 export const metadata = pageMetadata({
   title: "Privacy & Comment Policy",
@@ -8,9 +9,55 @@ export const metadata = pageMetadata({
 
 const LAST_UPDATED = "2026-04-22";
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Does this site track me?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text:
+          "Google Analytics records standard analytics data (IP-derived rough location, device, referrer, pages viewed) and sets cookies for session continuity. The site itself sets no other cookies for ordinary visitors. Third-party widgets like Disqus and YouTube may set their own cookies when they load.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Are comments moderated?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text:
+          "Yes. Comments are hosted by Disqus. Spam, harassment, off-topic posts, and personal attacks may be removed. Posting a comment makes it public.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How do I get a comment removed?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text:
+          "You can delete it directly from your Disqus account, or email tedcromwell@gmail.com to request removal.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Are there ads?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. There are no ads, no affiliate links, and no data sales.",
+      },
+    },
+  ],
+};
+
 export default function PrivacyPage() {
   return (
     <article className="max-w-3xl mx-auto prose prose-invert prose-amber">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(faqSchema) }}
+      />
       <h1>Privacy &amp; Comment Policy</h1>
       <p className="text-muted text-sm">Last updated: {LAST_UPDATED}</p>
 

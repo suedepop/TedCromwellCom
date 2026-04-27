@@ -8,6 +8,7 @@ import { listConcerts } from "@/lib/concerts";
 import { getVenue } from "@/lib/venues";
 import { pageMetadata } from "@/lib/metadata";
 import { jsonLdScript, venueJsonLd } from "@/lib/jsonld";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import type { Concert, Venue } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -118,6 +119,17 @@ export default async function VenueDetail({ params }: { params: { id: string } }
 
   return (
     <section className="space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(venueJsonLd(venue, stats.showsAttended)) }}
+      />
+      <Breadcrumbs
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Venues", path: "/venues" },
+          { name: venue.canonicalName, path: `/venues/${venue.id}` },
+        ]}
+      />
       <header>
         <h1 className="font-display text-4xl">{venue.canonicalName}</h1>
         <p className="text-muted mt-1">
@@ -189,10 +201,6 @@ export default async function VenueDetail({ params }: { params: { id: string } }
           </div>
         </section>
       )}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(venueJsonLd(venue, stats.showsAttended)) }}
-      />
     </section>
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import HomeFeed from "./HomeFeed";
 import { listFeedPage } from "@/lib/feed";
 import { getResume } from "@/lib/resume";
+import { jsonLdScript, siteJsonLd } from "@/lib/jsonld";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,10 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(siteJsonLd(resume)) }}
+      />
       <section className="space-y-4">
         <h1 className="font-display text-5xl md:text-6xl">{resume?.name || "Ted Cromwell"}</h1>
         {resume?.tagline ? (

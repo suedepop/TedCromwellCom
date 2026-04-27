@@ -1,6 +1,7 @@
 import ResumeView from "@/components/resume/ResumeView";
 import { getResume } from "@/lib/resume";
 import { pageMetadata } from "@/lib/metadata";
+import { jsonLdScript, resumePersonJsonLd } from "@/lib/jsonld";
 
 export const metadata = pageMetadata({
   title: "Resume",
@@ -23,6 +24,10 @@ export default async function ResumePage() {
   }
   return (
     <div className="max-w-3xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(resumePersonJsonLd(resume)) }}
+      />
       <ResumeView resume={resume} />
     </div>
   );

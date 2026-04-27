@@ -7,6 +7,7 @@ import PostBody from "@/components/blog/PostBody";
 import { findTravelEntryBySlugOrId } from "@/lib/travel";
 import { pageMetadata } from "@/lib/metadata";
 import { jsonLdScript, travelEntryJsonLd } from "@/lib/jsonld";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,17 @@ export default async function TravelEntryPage({ params }: { params: { id: string
 
   return (
     <article className="max-w-3xl mx-auto space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(travelEntryJsonLd(entry)) }}
+      />
+      <Breadcrumbs
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Travel", path: "/travel" },
+          { name: entry.locationName, path: `/travel/${entry.slug ?? entry.id}` },
+        ]}
+      />
       {featured && (
         <div className="relative left-1/2 -translate-x-1/2 w-screen h-[300px] -mt-10 mb-2 bg-black overflow-hidden">
           <img src={featured.blobUrl} alt="" className="w-full h-full object-cover opacity-90" />

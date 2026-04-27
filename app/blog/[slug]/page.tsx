@@ -5,7 +5,8 @@ import Disqus from "@/components/comments/Disqus";
 import PostBody from "@/components/blog/PostBody";
 import { findPostBySlug } from "@/lib/blog";
 import { pageMetadata } from "@/lib/metadata";
-import { blogPostJsonLd, jsonLdScript } from "@/lib/jsonld";
+import { blogPostJsonLdSpeakable, jsonLdScript } from "@/lib/jsonld";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,17 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const date = post.publishedAt ?? post.updatedAt;
   return (
     <article className="max-w-3xl mx-auto space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(blogPostJsonLdSpeakable(post)) }}
+      />
+      <Breadcrumbs
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Blog", path: "/blog" },
+          { name: post.title, path: `/blog/${post.slug}` },
+        ]}
+      />
       {post.coverImageUrl && (
         <div className="aspect-[16/9] bg-black rounded overflow-hidden">
           <img src={post.coverImageUrl} alt="" className="w-full h-full object-cover opacity-90" />
@@ -80,10 +92,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         identifier={`blog-${post.id}`}
         title={post.title}
         url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/blog/${post.slug}`}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(blogPostJsonLd(post)) }}
       />
     </article>
   );

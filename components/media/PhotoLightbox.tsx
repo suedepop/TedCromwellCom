@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 interface Photo {
   id: string;
@@ -12,12 +13,18 @@ interface Props {
   photos: Photo[];
   excludeIds?: string[];
   gridClassName?: string;
+  /** Analytics: where this gallery lives, e.g. "concert" or "travel" */
+  context?: string;
+  /** Analytics: id of the parent post/event */
+  contextId?: string;
 }
 
 export default function PhotoLightbox({
   photos,
   excludeIds = [],
   gridClassName = "grid grid-cols-2 md:grid-cols-3 gap-2",
+  context,
+  contextId,
 }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -49,7 +56,15 @@ export default function PhotoLightbox({
 
   function openAt(id: string) {
     const idx = photos.findIndex((p) => p.id === id);
-    if (idx >= 0) setOpenIndex(idx);
+    if (idx >= 0) {
+      setOpenIndex(idx);
+      trackEvent("photo_view", {
+        context: context ?? "unknown",
+        context_id: contextId,
+        photo_id: id,
+        index: idx,
+      });
+    }
   }
 
   const visible = photos.filter((p) => !excludeIds.includes(p.id));

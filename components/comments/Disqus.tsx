@@ -1,5 +1,6 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 interface Props {
   /** Stable unique identifier for the thread (post/concert/travel id). */
@@ -20,6 +21,26 @@ declare global {
 const SHORTNAME = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME;
 
 export default function Disqus({ identifier, title, url }: Props) {
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    let fired = false;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (!fired && entries.some((e) => e.isIntersecting)) {
+          fired = true;
+          trackEvent("comment_section_visible", { thread_id: identifier });
+          obs.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -25% 0px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [identifier]);
+
   useEffect(() => {
     if (!SHORTNAME) return;
 
@@ -52,7 +73,7 @@ export default function Disqus({ identifier, title, url }: Props) {
   }
 
   return (
-    <section className="mt-12 border-t border-border pt-8">
+    <section ref={sectionRef} className="mt-12 border-t border-border pt-8">
       <h2 className="font-display text-2xl mb-4">Comments</h2>
       <div id="disqus_thread" />
     </section>

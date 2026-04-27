@@ -5,6 +5,7 @@ import Disqus from "@/components/comments/Disqus";
 import PostBody from "@/components/blog/PostBody";
 import { findPostBySlug } from "@/lib/blog";
 import { pageMetadata } from "@/lib/metadata";
+import { blogPostJsonLd, jsonLdScript } from "@/lib/jsonld";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         identifier={`blog-${post.id}`}
         title={post.title}
         url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/blog/${post.slug}`}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(blogPostJsonLd(post)) }}
       />
     </article>
   );

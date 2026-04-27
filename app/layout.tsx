@@ -4,6 +4,7 @@ import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import WebVitals from "@/components/WebVitals";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const dmSerif = DM_Serif_Display({
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-10">{children}</main>
         <Footer />
         <GoogleAnalytics />
+        <WebVitals />
       </body>
     </html>
   );

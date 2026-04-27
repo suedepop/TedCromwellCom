@@ -7,6 +7,7 @@ import ConcertCard from "@/components/concerts/ConcertCard";
 import { listConcerts } from "@/lib/concerts";
 import { getVenue } from "@/lib/venues";
 import { pageMetadata } from "@/lib/metadata";
+import { jsonLdScript, venueJsonLd } from "@/lib/jsonld";
 import type { Concert, Venue } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -188,6 +189,10 @@ export default async function VenueDetail({ params }: { params: { id: string } }
           </div>
         </section>
       )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(venueJsonLd(venue, stats.showsAttended)) }}
+      />
     </section>
   );
 }

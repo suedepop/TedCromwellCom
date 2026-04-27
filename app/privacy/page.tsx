@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Privacy & Comment Policy — Ted Cromwell",
+export const metadata = pageMetadata({
+  title: "Privacy & Comment Policy",
   description: "How this site handles data, cookies, and comments.",
-};
+  path: "/privacy",
+});
 
-const LAST_UPDATED = "2026-04-20";
+const LAST_UPDATED = "2026-04-22";
 
 export default function PrivacyPage() {
   return (
@@ -23,9 +24,18 @@ export default function PrivacyPage() {
       <h2>What this site collects directly</h2>
       <ul>
         <li>
-          <strong>Nothing by default.</strong> The pages you visit are served from Azure; I don&apos;t run
-          my own analytics. Azure logs standard request metadata (IP, user-agent, path, response code)
-          for security and debugging, retained for a short window.
+          <strong>Google Analytics (GA4).</strong> I use Google Analytics to understand which
+          pages people read and where visitors come from. GA records standard analytics data —
+          IP-derived rough location, device and browser, referrer, and pages viewed — and sets
+          cookies (<code>_ga</code>, <code>_ga_*</code>) for session continuity. I don&apos;t use
+          this data to identify you personally, and Google&apos;s privacy terms apply. You can
+          opt out with a tracker blocker or the{" "}
+          <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics opt-out add-on</a>.
+        </li>
+        <li>
+          <strong>Azure logs.</strong> The pages are served from Azure Static Web Apps, which logs
+          standard request metadata (IP, user-agent, path, response code) for security and
+          debugging, retained for a short window.
         </li>
         <li>
           <strong>Admin cookie.</strong> The <code>/admin</code> area uses a signed{" "}

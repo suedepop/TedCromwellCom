@@ -5,6 +5,7 @@ import Disqus from "@/components/comments/Disqus";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import PostBody from "@/components/blog/PostBody";
 import { getTravelEntry } from "@/lib/travel";
+import { pageMetadata } from "@/lib/metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,25 @@ const TravelMap = dynamicImport(() => import("@/components/travel/TravelMap"), {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const entry = await getTravelEntry(params.id);
   if (!entry) return {};
-  return {
-    title: `${entry.locationName} — Travel — Ted Cromwell`,
-    description: entry.content.slice(0, 160),
-  };
+  const where = [entry.city, entry.state, entry.country].filter(Boolean).join(", ");
+  const dateRange =
+    entry.endDate && entry.endDate !== entry.startDate
+      ? `${entry.startDate} → ${entry.endDate}`
+      : entry.startDate;
+  const description = entry.content
+    ? entry.content.replace(/[#>*_`\[\]\(\)!]/g, "").replace(/\s+/g, " ").trim().slice(0, 200)
+    : `${dateRange} · ${where}`;
+  const featured = entry.photos.find((p) => p.id === entry.featuredPhotoId) ?? entry.photos[0];
+  return pageMetadata({
+    title: entry.locationName,
+    description,
+    path: `/travel/${entry.id}`,
+    imageUrl: featured?.blobUrl,
+    imageAlt: entry.locationName,
+    type: "article",
+    publishedTime: entry.publishedAt ?? entry.startDate,
+    modifiedTime: entry.updatedAt,
+  });
 }
 
 export default async function TravelEntryPage({ params }: { params: { id: string } }) {

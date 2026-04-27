@@ -1,8 +1,13 @@
-import type { Metadata } from "next";
 import ResumeView from "@/components/resume/ResumeView";
 import { getResume } from "@/lib/resume";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "Resume — Ted Cromwell" };
+export const metadata = pageMetadata({
+  title: "Resume",
+  description: "Senior consultant, systems architect, SAFe® 5 Agilist — 25+ years.",
+  path: "/resume",
+  type: "profile",
+});
 
 export const dynamic = "force-dynamic";
 

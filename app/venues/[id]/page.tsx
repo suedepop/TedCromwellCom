@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -5,9 +6,26 @@ import remarkGfm from "remark-gfm";
 import ConcertCard from "@/components/concerts/ConcertCard";
 import { listConcerts } from "@/lib/concerts";
 import { getVenue } from "@/lib/venues";
+import { pageMetadata } from "@/lib/metadata";
 import type { Concert, Venue } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const venue = await getVenue(params.id);
+  if (!venue) return {};
+  const where = [venue.city, venue.state, venue.country].filter(Boolean).join(", ");
+  const description =
+    venue.description?.replace(/[#>*_`\[\]\(\)!]/g, "").replace(/\s+/g, " ").trim().slice(0, 200) ??
+    `Concerts I've seen at ${venue.canonicalName} in ${where}.`;
+  return pageMetadata({
+    title: venue.canonicalName,
+    description,
+    path: `/venues/${venue.id}`,
+    imageAlt: venue.canonicalName,
+    type: "website",
+  });
+}
 
 const VenueMap = dynamicImport(() => import("@/components/venues/VenueMap"), { ssr: false });
 

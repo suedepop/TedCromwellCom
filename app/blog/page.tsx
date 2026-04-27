@@ -1,8 +1,12 @@
-import type { Metadata } from "next";
 import PostCard from "@/components/blog/PostCard";
 import { listPosts } from "@/lib/blog";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "Blog — Ted Cromwell" };
+export const metadata = pageMetadata({
+  title: "Blog",
+  description: "Essays, notes, and writing.",
+  path: "/blog",
+});
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

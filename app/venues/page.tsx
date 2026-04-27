@@ -1,8 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import dynamicImport from "next/dynamic";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "Venues — Ted Cromwell" };
+export const metadata = pageMetadata({
+  title: "Venues",
+  description: "Every place I've seen live music, on a map.",
+  path: "/venues",
+});
 import { listVenues } from "@/lib/venues";
 import { listConcerts } from "@/lib/concerts";
 

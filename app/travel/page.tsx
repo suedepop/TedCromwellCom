@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
 import TravelInfiniteList from "./TravelInfiniteList";
 import { listTravelEntries } from "@/lib/travel";
+import { pageMetadata } from "@/lib/metadata";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Travel — Ted Cromwell" };
+export const metadata = pageMetadata({
+  title: "Travel",
+  description: "Trips and places, mapped — a travel blog.",
+  path: "/travel",
+});
 
 const TravelMap = dynamicImport(() => import("@/components/travel/TravelMap"), {
   ssr: false,

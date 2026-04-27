@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { pageMetadata } from "@/lib/metadata";
 import Disqus from "@/components/comments/Disqus";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import SetlistBlock from "@/components/concerts/SetlistBlock";
@@ -9,6 +11,27 @@ import { concertBandLine } from "@/lib/concertDisplay";
 import { youtubeEmbedUrl } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const concert = await findConcertById(params.id);
+  if (!concert) return {};
+  const bands = concertBandLine(concert);
+  const date = new Date(concert.date).toLocaleDateString(undefined, { dateStyle: "long" });
+  const title = concert.eventName ? `${concert.eventName} — ${bands}` : bands;
+  const description = `${date} · ${concert.venueNameRaw} · ${concert.city}, ${concert.country}`;
+  const featured =
+    concert.photos.find((p) => p.id === concert.featuredPhotoId) ?? concert.photos[0];
+  return pageMetadata({
+    title,
+    description,
+    path: `/concerts/${concert.id}`,
+    imageUrl: featured?.blobUrl,
+    imageAlt: title,
+    type: "article",
+    publishedTime: concert.date,
+    modifiedTime: concert.updatedAt,
+  });
+}
 
 export default async function ConcertDetail({ params }: { params: { id: string } }) {
   const concert = await findConcertById(params.id);

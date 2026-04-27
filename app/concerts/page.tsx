@@ -1,8 +1,12 @@
-import type { Metadata } from "next";
 import ConcertsInfiniteList from "./ConcertsInfiniteList";
 import { listConcerts } from "@/lib/concerts";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "Concerts — Ted Cromwell" };
+export const metadata = pageMetadata({
+  title: "Concerts",
+  description: "Every concert I've been to — setlists, photos, and notes.",
+  path: "/concerts",
+});
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 12;

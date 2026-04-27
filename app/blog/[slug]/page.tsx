@@ -4,22 +4,24 @@ import { notFound } from "next/navigation";
 import Disqus from "@/components/comments/Disqus";
 import PostBody from "@/components/blog/PostBody";
 import { findPostBySlug } from "@/lib/blog";
+import { pageMetadata } from "@/lib/metadata";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = await findPostBySlug(params.slug);
-  if (!post) return {};
-  return {
-    title: `${post.title} — Ted Cromwell`,
+  if (!post || post.status !== "published") return {};
+  return pageMetadata({
+    title: post.title,
     description: post.excerpt,
-    openGraph: {
-      title: post.title,
-      description: post.excerpt,
-      images: post.coverImageUrl ? [post.coverImageUrl] : undefined,
-      type: "article",
-    },
-  };
+    path: `/blog/${post.slug}`,
+    imageUrl: post.coverImageUrl,
+    imageAlt: post.title,
+    type: "article",
+    publishedTime: post.publishedAt,
+    modifiedTime: post.updatedAt,
+    tags: post.tags,
+  });
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {

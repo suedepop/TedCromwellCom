@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Disqus from "@/components/comments/Disqus";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import PostBody from "@/components/blog/PostBody";
-import { getTravelEntry } from "@/lib/travel";
+import { findTravelEntryBySlugOrId } from "@/lib/travel";
 import { pageMetadata } from "@/lib/metadata";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 const TravelMap = dynamicImport(() => import("@/components/travel/TravelMap"), { ssr: false });
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const entry = await getTravelEntry(params.id);
+  const entry = await findTravelEntryBySlugOrId(params.id);
   if (!entry) return {};
   const where = [entry.city, entry.state, entry.country].filter(Boolean).join(", ");
   const dateRange =
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   return pageMetadata({
     title: entry.locationName,
     description,
-    path: `/travel/${entry.id}`,
+    path: `/travel/${entry.slug ?? entry.id}`,
     imageUrl: featured?.blobUrl,
     imageAlt: entry.locationName,
     type: "article",
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function TravelEntryPage({ params }: { params: { id: string } }) {
-  const entry = await getTravelEntry(params.id);
+  const entry = await findTravelEntryBySlugOrId(params.id);
   if (!entry) notFound();
   const featured = entry.photos.find((p) => p.id === entry.featuredPhotoId) ?? entry.photos[0];
   const dateRange =
@@ -73,7 +73,7 @@ export default async function TravelEntryPage({ params }: { params: { id: string
       <Disqus
         identifier={`travel-${entry.id}`}
         title={entry.locationName}
-        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/travel/${entry.id}`}
+        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/travel/${entry.slug ?? entry.id}`}
       />
     </article>
   );

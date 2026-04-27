@@ -44,7 +44,7 @@ export async function buildSearchIndex(): Promise<SearchIndexEntry[]> {
       title: c.eventName ? `${c.eventName} — ${concertBandLine(c)}` : concertBandLine(c),
       date: c.date,
       body: `${c.eventName ?? ""} ${artists} ${c.venueNameRaw} ${c.city} ${c.country} ${songs} ${c.notes}`,
-      url: `/concerts/${c.id}`,
+      url: `/concerts/${c.slug ?? c.id}`,
     });
   }
 

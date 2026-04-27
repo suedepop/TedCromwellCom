@@ -60,7 +60,7 @@ export default function TravelMap({ entries, height = 420, initialZoom }: Props)
                   {e.startDate}
                   {e.endDate && e.endDate !== e.startDate ? ` – ${e.endDate}` : ""}
                 </div>
-                <Link href={`/travel/${e.id}`} className="text-accent text-xs">
+                <Link href={`/travel/${e.slug ?? e.id}`} className="text-accent text-xs">
                   Read →
                 </Link>
               </div>

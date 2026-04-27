@@ -43,9 +43,27 @@ export async function findConcertById(id: string): Promise<Concert | null> {
   return resources[0] ?? null;
 }
 
+export async function findConcertBySlug(slug: string): Promise<Concert | null> {
+  const { resources } = await containers.concerts.items
+    .query<Concert>({
+      query: "SELECT * FROM c WHERE c.slug = @slug",
+      parameters: [{ name: "@slug", value: slug }],
+    })
+    .fetchAll();
+  return resources[0] ?? null;
+}
+
+export async function findConcertBySlugOrId(value: string): Promise<Concert | null> {
+  return (await findConcertBySlug(value)) ?? findConcertById(value);
+}
+
 export async function upsertConcert(concert: Concert): Promise<Concert> {
   concert.pk = concert.venueId;
   concert.updatedAt = new Date().toISOString();
+  if (!concert.slug) {
+    const { uniqueConcertSlug } = await import("./slugBuilders");
+    concert.slug = await uniqueConcertSlug(concert, concert.id);
+  }
   const { resource } = await containers.concerts.items.upsert(concert);
   return resource as unknown as Concert;
 }

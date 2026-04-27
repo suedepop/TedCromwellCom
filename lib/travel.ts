@@ -46,10 +46,31 @@ export async function getTravelEntry(id: string): Promise<TravelEntry | null> {
   }
 }
 
+export async function findTravelEntryBySlug(slug: string): Promise<TravelEntry | null> {
+  const { resources } = await containers.trips.items
+    .query<TravelEntry>({
+      query: "SELECT * FROM c WHERE c.slug = @slug AND IS_DEFINED(c.locationName)",
+      parameters: [{ name: "@slug", value: slug }],
+    })
+    .fetchAll();
+  return resources[0] ?? null;
+}
+
+export async function findTravelEntryBySlugOrId(value: string): Promise<TravelEntry | null> {
+  return (await findTravelEntryBySlug(value)) ?? getTravelEntry(value);
+}
+
 export async function createTravelEntry(input: TravelEntryInput): Promise<TravelEntry> {
   const now = new Date().toISOString();
+  const { uniqueTravelSlug } = await import("./slugBuilders");
+  const slug = await uniqueTravelSlug({
+    startDate: input.startDate,
+    locationName: input.locationName,
+    country: input.country,
+  });
   const entry: TravelEntry = {
     id: randomUUID(),
+    slug,
     locationName: input.locationName,
     startDate: input.startDate,
     endDate: input.endDate || undefined,
@@ -78,8 +99,21 @@ export async function updateTravelEntry(
     input.featuredPhotoId !== undefined
       ? input.featuredPhotoId
       : existing.featuredPhotoId;
+  let slug = existing.slug;
+  if (!slug) {
+    const { uniqueTravelSlug } = await import("./slugBuilders");
+    slug = await uniqueTravelSlug(
+      {
+        startDate: input.startDate ?? existing.startDate,
+        locationName: input.locationName ?? existing.locationName,
+        country: input.country ?? existing.country,
+      },
+      existing.id,
+    );
+  }
   const updated: TravelEntry = {
     ...existing,
+    slug,
     locationName: input.locationName ?? existing.locationName,
     startDate: input.startDate ?? existing.startDate,
     endDate: input.endDate ?? existing.endDate,

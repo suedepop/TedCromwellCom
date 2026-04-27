@@ -9,10 +9,10 @@ export default function ConcertCard({ concert }: { concert: Concert }) {
   const cover = featured?.thumbnailUrl ?? featured?.blobUrl;
   return (
     <Link
-      href={`/concerts/${concert.id}`}
-      className="block border border-border bg-surface rounded overflow-hidden hover:border-accent transition"
+      href={`/concerts/${concert.slug ?? concert.id}`}
+      className="flex flex-col h-full border border-border bg-surface rounded overflow-hidden hover:border-accent transition"
     >
-      <div className="aspect-[4/3] bg-black flex items-center justify-center">
+      <div className="aspect-[16/9] bg-black flex items-center justify-center">
         {cover ? (
           <img src={cover} alt="" className="w-full h-full object-cover opacity-90" />
         ) : (
@@ -21,14 +21,14 @@ export default function ConcertCard({ concert }: { concert: Concert }) {
           </span>
         )}
       </div>
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="text-xs text-muted">
           {new Date(concert.date).toLocaleDateString()} · {concert.city}
         </div>
         {concert.eventName && (
           <div className="text-xs text-accent mt-1 uppercase tracking-wider">{concert.eventName}</div>
         )}
-        <h3 className="font-display text-lg mt-1">{bands}</h3>
+        <h3 className="font-display text-xl mt-1">{bands}</h3>
         <p className="text-sm text-muted mt-1">{concert.venueNameRaw}</p>
       </div>
     </Link>

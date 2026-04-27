@@ -10,8 +10,8 @@ export default function TravelCard({ entry }: { entry: TravelEntry }) {
       : entry.startDate;
   return (
     <Link
-      href={`/travel/${entry.id}`}
-      className="block border border-border bg-surface rounded overflow-hidden hover:border-accent transition"
+      href={`/travel/${entry.slug ?? entry.id}`}
+      className="flex flex-col h-full border border-border bg-surface rounded overflow-hidden hover:border-accent transition"
     >
       <div className="aspect-[16/9] bg-black">
         {cover ? (
@@ -22,7 +22,7 @@ export default function TravelCard({ entry }: { entry: TravelEntry }) {
           </div>
         )}
       </div>
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <h3 className="font-display text-xl">{entry.locationName}</h3>
         <p className="text-xs text-muted mt-1">
           {[entry.city, entry.state, entry.country].filter(Boolean).join(", ")}

@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/metadata";
 import Disqus from "@/components/comments/Disqus";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import SetlistBlock from "@/components/concerts/SetlistBlock";
-import { findConcertById } from "@/lib/concerts";
+import { findConcertBySlugOrId } from "@/lib/concerts";
 import { getVenue } from "@/lib/venues";
 import { concertBandLine } from "@/lib/concertDisplay";
 import { youtubeEmbedUrl } from "@/lib/youtube";
@@ -13,7 +13,7 @@ import { youtubeEmbedUrl } from "@/lib/youtube";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const concert = await findConcertById(params.id);
+  const concert = await findConcertBySlugOrId(params.id);
   if (!concert) return {};
   const bands = concertBandLine(concert);
   const date = new Date(concert.date).toLocaleDateString(undefined, { dateStyle: "long" });
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   return pageMetadata({
     title,
     description,
-    path: `/concerts/${concert.id}`,
+    path: `/concerts/${concert.slug ?? concert.id}`,
     imageUrl: featured?.blobUrl,
     imageAlt: title,
     type: "article",
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ConcertDetail({ params }: { params: { id: string } }) {
-  const concert = await findConcertById(params.id);
+  const concert = await findConcertBySlugOrId(params.id);
   if (!concert) notFound();
   const venue = await getVenue(concert.venueId);
   const featured =
@@ -153,7 +153,7 @@ export default async function ConcertDetail({ params }: { params: { id: string }
       <Disqus
         identifier={`concert-${concert.id}`}
         title={concertBandLine(concert)}
-        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/concerts/${concert.id}`}
+        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/concerts/${concert.slug ?? concert.id}`}
       />
     </article>
   );

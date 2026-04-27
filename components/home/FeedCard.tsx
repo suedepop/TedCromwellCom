@@ -11,7 +11,7 @@ const LABEL: Record<FeedItem["type"], string> = {
 
 export default function FeedCard({ item }: { item: FeedItem }) {
   return (
-    <div className="relative">
+    <div className="relative h-full">
       <span className="absolute top-2 left-2 z-10 text-[10px] uppercase tracking-wider font-medium bg-bg/85 text-accent border border-accent/40 rounded px-2 py-0.5 backdrop-blur-sm">
         {LABEL[item.type]}
       </span>

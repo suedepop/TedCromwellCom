@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "verify": "tsx scripts/verify-connections.ts",
-    "seed:resume": "tsx scripts/seed-resume.ts"
+    "seed:resume": "tsx scripts/seed-resume.ts",
+    "backfill:slugs": "tsx scripts/backfill-slugs.ts"
   },
   "dependencies": {
     "@azure/cosmos": "^4.9.2",

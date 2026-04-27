@@ -53,6 +53,7 @@ export interface Link {
 export interface Concert {
   id: string;
   pk: string;
+  slug?: string;
   venueId: string;
   venueNameRaw: string;
   eventName?: string;
@@ -92,6 +93,7 @@ export interface Venue {
 
 export interface TravelEntry {
   id: string;
+  slug?: string;
   locationName: string;
   startDate: string;      // YYYY-MM-DD
   endDate?: string;       // YYYY-MM-DD — blank = same as start

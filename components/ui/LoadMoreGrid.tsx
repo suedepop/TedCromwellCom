@@ -69,7 +69,9 @@ export default function LoadMoreGrid<T>({
     <div className="space-y-6">
       <div className={gridClass}>
         {items.map((item) => (
-          <div key={keyOf(item)}>{renderItem(item)}</div>
+          <div key={keyOf(item)} className="h-full">
+            {renderItem(item)}
+          </div>
         ))}
       </div>
       {error && <p className="text-red-400 text-sm">Load failed: {error}. Try again.</p>}

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
 import { notFound } from "next/navigation";
-import Disqus from "@/components/comments/Disqus";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import PostBody from "@/components/blog/PostBody";
 import { findTravelEntryBySlugOrId } from "@/lib/travel";
@@ -83,11 +82,6 @@ export default async function TravelEntryPage({ params }: { params: { id: string
           />
         </section>
       )}
-      <Disqus
-        identifier={`travel-${entry.id}`}
-        title={entry.locationName}
-        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/travel/${entry.slug ?? entry.id}`}
-      />
     </article>
   );
 }

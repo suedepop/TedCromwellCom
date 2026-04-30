@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Disqus from "@/components/comments/Disqus";
 import PostBody from "@/components/blog/PostBody";
 import { findPostBySlug } from "@/lib/blog";
 import { pageMetadata } from "@/lib/metadata";
@@ -74,12 +73,14 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       )}
       <header className="space-y-3">
         <h1 className="font-display text-4xl md:text-5xl">{post.title}</h1>
-        <div className="flex items-center gap-3 text-sm text-muted">
-          <time dateTime={date}>{new Date(date).toLocaleDateString()}</time>
+        <div className="flex items-center gap-3 text-sm text-muted min-w-0">
+          <time dateTime={date} className="whitespace-nowrap shrink-0">
+            {new Date(date).toLocaleDateString()}
+          </time>
           {post.tags.length > 0 && (
-            <span className="flex gap-2">
+            <span className="flex gap-2 flex-nowrap overflow-hidden whitespace-nowrap min-w-0">
               {post.tags.map((t) => (
-                <span key={t} className="text-accent">
+                <span key={t} className="text-accent truncate">
                   #{t}
                 </span>
               ))}
@@ -88,11 +89,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         </div>
       </header>
       <PostBody content={post.content} />
-      <Disqus
-        identifier={`blog-${post.id}`}
-        title={post.title}
-        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/blog/${post.slug}`}
-      />
     </article>
   );
 }

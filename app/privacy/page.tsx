@@ -2,12 +2,12 @@ import { pageMetadata } from "@/lib/metadata";
 import { jsonLdScript } from "@/lib/jsonld";
 
 export const metadata = pageMetadata({
-  title: "Privacy & Comment Policy",
-  description: "How this site handles data, cookies, and comments.",
+  title: "Privacy Policy",
+  description: "How this site handles data and cookies.",
   path: "/privacy",
 });
 
-const LAST_UPDATED = "2026-04-22";
+const LAST_UPDATED = "2026-04-30";
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -19,25 +19,7 @@ const faqSchema = {
       acceptedAnswer: {
         "@type": "Answer",
         text:
-          "Google Analytics records standard analytics data (IP-derived rough location, device, referrer, pages viewed) and sets cookies for session continuity. The site itself sets no other cookies for ordinary visitors. Third-party widgets like Disqus and YouTube may set their own cookies when they load.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Are comments moderated?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text:
-          "Yes. Comments are hosted by Disqus. Spam, harassment, off-topic posts, and personal attacks may be removed. Posting a comment makes it public.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How do I get a comment removed?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text:
-          "You can delete it directly from your Disqus account, or email tedcromwell@gmail.com to request removal.",
+          "Google Analytics records standard analytics data (IP-derived rough location, device, referrer, pages viewed) and sets cookies for session continuity. The site itself sets no other cookies for ordinary visitors. Embedded YouTube players may set their own cookies when they load.",
       },
     },
     {
@@ -46,6 +28,15 @@ const faqSchema = {
       acceptedAnswer: {
         "@type": "Answer",
         text: "No. There are no ads, no affiliate links, and no data sales.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I comment on posts?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text:
+          "Not currently. There's no comment system on the site. If you'd like to reach me, email tedcromwell@gmail.com.",
       },
     },
   ],
@@ -58,14 +49,14 @@ export default function PrivacyPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(faqSchema) }}
       />
-      <h1>Privacy &amp; Comment Policy</h1>
+      <h1>Privacy Policy</h1>
       <p className="text-muted text-sm">Last updated: {LAST_UPDATED}</p>
 
       <h2>The short version</h2>
       <p>
         This is a personal site. I don&apos;t run ads, I don&apos;t sell data, and I don&apos;t try to
         track visitors across the web. The few things that do touch your data are listed below — mostly
-        third-party services that make the site work (maps, comments, image hosting).
+        third-party services that make the site work (maps, image hosting, analytics).
       </p>
 
       <h2>What this site collects directly</h2>
@@ -94,17 +85,6 @@ export default function PrivacyPage() {
       <h2>Third-party services</h2>
       <ul>
         <li>
-          <strong>Disqus</strong> — powers the comments on blog, concert, and travel detail pages.
-          When a comment thread loads, Disqus sees the page URL, a thread identifier, and (if you
-          comment or sign in) whatever account details you provide. Disqus is a third party with its
-          own privacy practices — read them at{" "}
-          <a href="https://help.disqus.com/en/articles/1717103-disqus-privacy-policy">
-            help.disqus.com/en/articles/1717103-disqus-privacy-policy
-          </a>
-          . If you&apos;d rather not load Disqus, a browser-level tracker blocker will prevent the
-          embed from firing; the rest of the page still works.
-        </li>
-        <li>
           <strong>OpenStreetMap</strong> — map tiles on the concerts, venues, and travel pages come
           from OpenStreetMap. Rendering a tile requires your browser to request it, which exposes
           your IP to their servers.
@@ -130,38 +110,22 @@ export default function PrivacyPage() {
 
       <h2>Cookies</h2>
       <p>
-        The site itself only sets the admin cookie mentioned above, and only for me. Embedded
-        third-party widgets (Disqus, YouTube) may set their own cookies when they load. Blocking
-        third-party cookies in your browser is a reasonable default and won&apos;t break anything here
-        except the ability to comment.
+        The site itself only sets the admin cookie mentioned above, and only for me. Google
+        Analytics sets first-party cookies as described above. Embedded YouTube players may set
+        their own cookies when they load. Blocking third-party cookies in your browser is a
+        reasonable default and won&apos;t break anything here.
       </p>
 
-      <h2>Comment policy</h2>
-      <p>Comments are welcome, with a few ground rules:</p>
-      <ul>
-        <li>Be civil. Disagreement is fine; personal attacks and slurs aren&apos;t.</li>
-        <li>No spam, no self-promotion unrelated to the post, no affiliate links.</li>
-        <li>No harassment, doxxing, or threats. First-time violations get removed; repeat offenders get banned.</li>
-        <li>Off-topic comments may be removed at my discretion.</li>
-        <li>
-          Comments you post are public and visible to anyone who visits the page. Don&apos;t share
-          anything you wouldn&apos;t want archived.
-        </li>
-        <li>
-          I reserve the right to edit, remove, or hide comments — typically only for the reasons
-          above. I generally don&apos;t edit content, only remove when necessary.
-        </li>
-      </ul>
+      <h2>Comments</h2>
       <p>
-        Comments are hosted by Disqus under my account. If you want a comment removed or your
-        Disqus profile data deleted, you can do it directly through Disqus, or email me (below) and
-        I&apos;ll handle it.
+        There&apos;s no comment system on the site right now. If you want to reach me about
+        something you read, email me at the address below.
       </p>
 
       <h2>Email &amp; contact</h2>
       <p>
-        If you email me from a form or directly, I&apos;ll read it. I won&apos;t subscribe you to
-        anything. There&apos;s no newsletter.
+        If you email me directly, I&apos;ll read it. I won&apos;t subscribe you to anything.
+        There&apos;s no newsletter.
       </p>
 
       <h2>Changes</h2>

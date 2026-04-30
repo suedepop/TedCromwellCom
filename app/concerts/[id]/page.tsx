@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/metadata";
 import { concertEventJsonLd, jsonLdScript } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import Disqus from "@/components/comments/Disqus";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import SetlistBlock from "@/components/concerts/SetlistBlock";
 import { findConcertBySlugOrId } from "@/lib/concerts";
@@ -166,11 +165,6 @@ export default async function ConcertDetail({ params }: { params: { id: string }
           <p className="whitespace-pre-wrap text-sm">{concert.notes}</p>
         </section>
       )}
-      <Disqus
-        identifier={`concert-${concert.id}`}
-        title={concertBandLine(concert)}
-        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/concerts/${concert.slug ?? concert.id}`}
-      />
     </article>
   );
 }

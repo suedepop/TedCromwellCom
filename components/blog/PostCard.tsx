@@ -20,15 +20,19 @@ export default function PostCard({ post }: { post: BlogPost }) {
       <div className="p-5 flex-1 flex flex-col">
         <h2 className="font-display text-xl mb-2">{post.title}</h2>
         <p className="text-muted text-sm mb-3 line-clamp-3">{post.excerpt}</p>
-        <div className="flex items-center justify-between text-xs text-muted mt-auto">
-          <time dateTime={date}>{new Date(date).toLocaleDateString()}</time>
-          <div className="flex gap-2">
-            {post.tags.slice(0, 3).map((t) => (
-              <span key={t} className="text-accent">
-                #{t}
-              </span>
-            ))}
-          </div>
+        <div className="flex items-center justify-between gap-3 text-xs text-muted mt-auto min-w-0">
+          <time dateTime={date} className="whitespace-nowrap shrink-0">
+            {new Date(date).toLocaleDateString()}
+          </time>
+          {post.tags.length > 0 && (
+            <div className="flex gap-2 flex-nowrap overflow-hidden whitespace-nowrap min-w-0 justify-end">
+              {post.tags.slice(0, 3).map((t) => (
+                <span key={t} className="text-accent truncate">
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </Link>

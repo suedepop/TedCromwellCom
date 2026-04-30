@@ -61,6 +61,7 @@ export interface Concert {
   city: string;
   country: string;
   setlists: Setlist[];
+  writeUp?: string;
   photos: Photo[];
   featuredPhotoId?: string;
   videoUrls: string[];

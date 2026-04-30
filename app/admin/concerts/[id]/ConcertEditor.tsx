@@ -1,10 +1,13 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Concert, Photo, Setlist, TicketStub, Venue } from "@/lib/types";
 import SortablePhotos from "@/components/media/SortablePhotos";
 import UploadDropzone from "@/components/media/UploadDropzone";
 import SetlistSortable from "@/components/concerts/SetlistSortable";
+
+const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 
 export default function ConcertEditor({ concert, venues }: { concert: Concert; venues: Venue[] }) {
   const router = useRouter();
@@ -14,6 +17,7 @@ export default function ConcertEditor({ concert, venues }: { concert: Concert; v
   const [country, setCountry] = useState(concert.country);
   const [venueId, setVenueId] = useState(concert.venueId);
   const [notes, setNotes] = useState(concert.notes);
+  const [writeUp, setWriteUp] = useState(concert.writeUp ?? "");
   const [linksText, setLinksText] = useState(
     concert.links.map((l) => `${l.label} | ${l.url}`).join("\n"),
   );
@@ -52,6 +56,7 @@ export default function ConcertEditor({ concert, venues }: { concert: Concert; v
         country,
         venueId,
         notes,
+        writeUp: writeUp.trim() || undefined,
         links,
         photos: nextPhotos,
         featuredPhotoId: nextFeatured && nextPhotos.some((p) => p.id === nextFeatured) ? nextFeatured : undefined,
@@ -174,8 +179,11 @@ export default function ConcertEditor({ concert, venues }: { concert: Concert; v
       <Field label="Links (one per line: Label | URL)">
         <textarea rows={4} value={linksText} onChange={(e) => setLinksText(e.target.value)} className="w-full bg-surface border border-border rounded px-3 py-2 font-mono text-xs" />
       </Field>
-      <Field label="Notes">
-        <textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full bg-surface border border-border rounded px-3 py-2 text-sm" />
+      <Field label="Write-up (markdown — shown above the setlist on the public page)">
+        <MarkdownEditor value={writeUp} onChange={setWriteUp} />
+      </Field>
+      <Field label="Notes (short, plain text — appears at the bottom of the public page)">
+        <textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full bg-surface border border-border rounded px-3 py-2 text-sm" />
       </Field>
 
       <section className="space-y-2">

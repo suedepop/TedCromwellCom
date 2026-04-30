@@ -5,6 +5,7 @@ import { pageMetadata } from "@/lib/metadata";
 import { concertEventJsonLd, jsonLdScript } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
+import PostBody from "@/components/blog/PostBody";
 import SetlistBlock from "@/components/concerts/SetlistBlock";
 import { findConcertBySlugOrId } from "@/lib/concerts";
 import { getVenue } from "@/lib/venues";
@@ -87,6 +88,8 @@ export default async function ConcertDetail({ params }: { params: { id: string }
           · {concert.city}, {concert.country}
         </p>
       </header>
+
+      {concert.writeUp && <PostBody content={concert.writeUp} />}
 
       <section className="space-y-8">
         {concert.setlists

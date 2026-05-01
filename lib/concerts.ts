@@ -75,6 +75,69 @@ export async function deleteConcertById(id: string): Promise<boolean> {
   return true;
 }
 
+export async function mergeConcerts(keepId: string, mergeId: string): Promise<Concert | null> {
+  if (keepId === mergeId) return null;
+  const [keep, merge] = await Promise.all([findConcertById(keepId), findConcertById(mergeId)]);
+  if (!keep || !merge) return null;
+
+  // Combine setlists — preserve any keep's then append merge's, dedupe by setlistFmId, renumber sortOrder
+  const seenSetlistIds = new Set<string>();
+  const combinedSetlists = [...keep.setlists, ...merge.setlists]
+    .filter((s) => {
+      if (s.setlistFmId && seenSetlistIds.has(s.setlistFmId)) return false;
+      if (s.setlistFmId) seenSetlistIds.add(s.setlistFmId);
+      return true;
+    })
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((s, i) => ({ ...s, sortOrder: i }));
+
+  const dedupeBy = <T,>(arr: T[], key: (item: T) => string): T[] => {
+    const seen = new Set<string>();
+    return arr.filter((item) => {
+      const k = key(item);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  const merged: Concert = {
+    ...keep,
+    setlists: combinedSetlists,
+    photos: dedupeBy([...keep.photos, ...merge.photos], (p) => p.id),
+    ticketStubs: dedupeBy([...keep.ticketStubs, ...merge.ticketStubs], (t) => t.id),
+    links: dedupeBy([...keep.links, ...merge.links], (l) => l.url),
+    videoUrls: Array.from(new Set([...(keep.videoUrls ?? []), ...(merge.videoUrls ?? [])])),
+    setlistFmIds: Array.from(new Set([...keep.setlistFmIds, ...merge.setlistFmIds])),
+    eventName: keep.eventName || merge.eventName,
+    writeUp: keep.writeUp || merge.writeUp,
+    notes: [keep.notes, merge.notes].filter(Boolean).join("\n\n").trim(),
+    featuredPhotoId: keep.featuredPhotoId ?? merge.featuredPhotoId,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await containers.concerts.item(merge.id, merge.venueId).delete();
+  const { resource } = await containers.concerts.item(keep.id, keep.venueId).replace(merged);
+  return resource as Concert;
+}
+
+export async function findConcertsOnSameDateOrVenue(
+  concert: Concert,
+): Promise<Concert[]> {
+  const { resources } = await containers.concerts.items
+    .query<Concert>({
+      query:
+        "SELECT * FROM c WHERE c.id != @id AND (c.date = @date OR c.venueId = @venueId)",
+      parameters: [
+        { name: "@id", value: concert.id },
+        { name: "@date", value: concert.date },
+        { name: "@venueId", value: concert.venueId },
+      ],
+    })
+    .fetchAll();
+  return resources;
+}
+
 export function newConcertId(): string {
   return randomUUID();
 }

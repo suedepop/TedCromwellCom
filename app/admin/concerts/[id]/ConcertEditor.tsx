@@ -9,8 +9,44 @@ import SetlistSortable from "@/components/concerts/SetlistSortable";
 
 const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 
-export default function ConcertEditor({ concert, venues }: { concert: Concert; venues: Venue[] }) {
+export interface MergeCandidate {
+  id: string;
+  label: string;
+  sameDateAndVenue: boolean;
+}
+
+export default function ConcertEditor({
+  concert,
+  venues,
+  mergeCandidates = [],
+}: {
+  concert: Concert;
+  venues: Venue[];
+  mergeCandidates?: MergeCandidate[];
+}) {
   const router = useRouter();
+  const [mergeId, setMergeId] = useState("");
+  const [mergeError, setMergeError] = useState<string | null>(null);
+
+  async function doMerge() {
+    if (!mergeId) return;
+    const target = mergeCandidates.find((c) => c.id === mergeId);
+    const note = target?.sameDateAndVenue
+      ? "Combine setlists, photos, stubs, links, and notes from this duplicate into the current concert? The other concert will be deleted."
+      : "Merge the selected concert into THIS concert? The other concert will be deleted.";
+    if (!confirm(note)) return;
+    setMergeError(null);
+    const res = await fetch("/api/concerts/merge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ keepId: concert.id, mergeId }),
+    });
+    if (!res.ok) {
+      setMergeError(`Merge failed: ${res.status}`);
+      return;
+    }
+    router.refresh();
+  }
   const [eventName, setEventName] = useState(concert.eventName ?? "");
   const [date, setDate] = useState(concert.date);
   const [city, setCity] = useState(concert.city);
@@ -248,6 +284,44 @@ export default function ConcertEditor({ concert, venues }: { concert: Concert; v
           </div>
         )}
       </section>
+
+      {mergeCandidates.length > 0 && (
+        <section className="border border-border rounded p-4 bg-surface space-y-3">
+          <h2 className="font-display text-lg">Merge another concert into this one</h2>
+          {mergeCandidates.some((c) => c.sameDateAndVenue) && (
+            <p className="text-xs text-accent">
+              ⚠ Possible duplicate detected (same date + venue) — listed first.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <select
+              value={mergeId}
+              onChange={(e) => setMergeId(e.target.value)}
+              className="flex-1 bg-bg border border-border rounded px-3 py-2 text-sm"
+            >
+              <option value="">Select a concert to merge…</option>
+              {mergeCandidates.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.sameDateAndVenue ? "★ " : ""}
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={doMerge}
+              disabled={!mergeId}
+              className="bg-accent text-bg px-3 rounded text-sm disabled:opacity-50"
+            >
+              Merge
+            </button>
+          </div>
+          {mergeError && <p className="text-xs text-red-400">{mergeError}</p>}
+          <p className="text-xs text-muted">
+            Combines setlists, photos, ticket stubs, links, video URLs, and notes from the other
+            concert into this one. The other concert is then deleted.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

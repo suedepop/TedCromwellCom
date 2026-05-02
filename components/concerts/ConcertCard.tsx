@@ -12,7 +12,7 @@ export default function ConcertCard({ concert }: { concert: Concert }) {
       href={`/concerts/${concert.slug ?? concert.id}`}
       className="flex flex-col h-full border border-border bg-surface rounded overflow-hidden hover:border-accent transition"
     >
-      <div className="aspect-[16/9] bg-black flex items-center justify-center">
+      <div className="h-48 shrink-0 w-full bg-black overflow-hidden flex items-center justify-center">
         {cover ? (
           <img src={cover} alt="" className="w-full h-full object-cover opacity-90" />
         ) : (

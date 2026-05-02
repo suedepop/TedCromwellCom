@@ -8,7 +8,7 @@ export default function PostCard({ post }: { post: BlogPost }) {
       href={`/blog/${post.slug}`}
       className="flex flex-col h-full border border-border bg-surface rounded overflow-hidden hover:border-accent transition"
     >
-      <div className="aspect-[16/9] bg-black">
+      <div className="h-48 shrink-0 w-full bg-black overflow-hidden">
         {post.coverImageUrl && (
           <img
             src={post.coverImageUrl}

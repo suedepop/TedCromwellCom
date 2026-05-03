@@ -6,6 +6,9 @@ html, body { background: #0a0a0a; color: #f0f0f0; }
 a { color: inherit; }
 a:hover { color: #e8a030; }
 
+/* Cusdis iframe — give it room before its self-reported height kicks in */
+#cusdis_thread iframe { min-height: 420px; }
+
 /* TipTap tables inside the editor */
 .ProseMirror table { border-collapse: collapse; margin: 1rem 0; width: 100%; table-layout: fixed; }
 .ProseMirror th, .ProseMirror td { border: 1px solid #2a2a2a; padding: 0.5rem; vertical-align: top; }

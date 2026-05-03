@@ -1,4 +1,5 @@
 "use client";
+import Script from "next/script";
 import { useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
 
@@ -24,6 +25,7 @@ const SCRIPT_SRC = "https://cusdis.com/js/cusdis.es.js";
 export default function Cusdis({ pageId, title, url }: Props) {
   const sectionRef = useRef<HTMLElement | null>(null);
 
+  // GA: fire once when the comment section scrolls into view
   useEffect(() => {
     if (!APP_ID) return;
     const el = sectionRef.current;
@@ -43,21 +45,12 @@ export default function Cusdis({ pageId, title, url }: Props) {
     return () => obs.disconnect();
   }, [pageId]);
 
+  // On SPA navigation between detail pages, re-init Cusdis with the new thread
   useEffect(() => {
     if (!APP_ID) return;
-    // If Cusdis already loaded on this page (SPA navigation), re-init.
-    if (window.CUSDIS) {
+    if (typeof window !== "undefined" && window.CUSDIS) {
       window.CUSDIS.initial();
-      return;
     }
-    const script = document.createElement("script");
-    script.src = SCRIPT_SRC;
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-    return () => {
-      script.remove();
-    };
   }, [pageId, title, url]);
 
   if (!APP_ID) return null;
@@ -74,6 +67,7 @@ export default function Cusdis({ pageId, title, url }: Props) {
         data-page-title={title}
         data-theme="dark"
       />
+      <Script src={SCRIPT_SRC} strategy="afterInteractive" />
     </section>
   );
 }

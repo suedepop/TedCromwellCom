@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-5xl mx-auto px-4 py-6 text-sm text-muted flex items-center justify-between flex-wrap gap-2">
         <span>© {new Date().getFullYear()} Ted Cromwell</span>
         <Link href="/privacy" className="hover:text-accent">
-          Privacy
+          Privacy &amp; comments
         </Link>
       </div>
     </footer>

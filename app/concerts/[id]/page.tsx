@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/metadata";
 import { concertEventJsonLd, jsonLdScript } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import Cusdis from "@/components/comments/Cusdis";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import PostBody from "@/components/blog/PostBody";
 import SetlistBlock from "@/components/concerts/SetlistBlock";
@@ -168,6 +169,11 @@ export default async function ConcertDetail({ params }: { params: { id: string }
           <p className="whitespace-pre-wrap text-sm">{concert.notes}</p>
         </section>
       )}
+      <Cusdis
+        pageId={`concert-${concert.id}`}
+        title={concertBandLine(concert)}
+        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/concerts/${concert.slug ?? concert.id}`}
+      />
     </article>
   );
 }

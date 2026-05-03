@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Cusdis from "@/components/comments/Cusdis";
 import PostBody from "@/components/blog/PostBody";
 import { findPostBySlug } from "@/lib/blog";
 import { pageMetadata } from "@/lib/metadata";
@@ -90,11 +89,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         </div>
       </header>
       <PostBody content={post.content} />
-      <Cusdis
-        pageId={`blog-${post.id}`}
-        title={post.title}
-        url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/blog/${post.slug}`}
-      />
     </article>
   );
 }

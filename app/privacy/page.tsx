@@ -2,8 +2,8 @@ import { pageMetadata } from "@/lib/metadata";
 import { jsonLdScript } from "@/lib/jsonld";
 
 export const metadata = pageMetadata({
-  title: "Privacy & Comment Policy",
-  description: "How this site handles data, cookies, and comments.",
+  title: "Privacy Policy",
+  description: "How this site handles data and cookies.",
   path: "/privacy",
 });
 
@@ -36,15 +36,7 @@ const faqSchema = {
       acceptedAnswer: {
         "@type": "Answer",
         text:
-          "Yes — comments are powered by Cusdis on blog, concert, and travel detail pages. You can post a comment with a name and (optionally) an email address. Comments are moderated. If you don't want to load Cusdis, a tracker blocker will prevent the embed from firing.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How do I get a comment removed?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Email tedcromwell@gmail.com with the URL and roughly when you posted, and I'll remove it.",
+          "Not currently. There's no comment system on the site. If you'd like to reach me, email tedcromwell@gmail.com.",
       },
     },
   ],
@@ -57,7 +49,7 @@ export default function PrivacyPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(faqSchema) }}
       />
-      <h1>Privacy &amp; Comment Policy</h1>
+      <h1>Privacy Policy</h1>
       <p className="text-muted text-sm">Last updated: {LAST_UPDATED}</p>
 
       <h2>The short version</h2>
@@ -93,15 +85,6 @@ export default function PrivacyPage() {
       <h2>Third-party services</h2>
       <ul>
         <li>
-          <strong>Cusdis</strong> — powers the comments on blog, concert, and travel detail pages.
-          When a comment thread loads, Cusdis sees the page URL and a thread identifier. If you
-          post a comment, your name and (optionally) email are stored on Cusdis&apos;s servers and
-          shown publicly with the comment text. Cusdis is open source and their privacy terms apply
-          — see <a href="https://cusdis.com/doc#/about/privacy">cusdis.com/doc#/about/privacy</a>.
-          A browser-level tracker blocker will prevent the embed from loading; the rest of the page
-          still works.
-        </li>
-        <li>
           <strong>OpenStreetMap</strong> — map tiles on the concerts, venues, and travel pages come
           from OpenStreetMap. Rendering a tile requires your browser to request it, which exposes
           your IP to their servers.
@@ -133,21 +116,10 @@ export default function PrivacyPage() {
         reasonable default and won&apos;t break anything here.
       </p>
 
-      <h2>Comment policy</h2>
-      <p>Comments are welcome on blog, concert, and travel pages, with a few ground rules:</p>
-      <ul>
-        <li>Be civil. Disagreement is fine; personal attacks and slurs aren&apos;t.</li>
-        <li>No spam, no self-promotion unrelated to the post, no affiliate links.</li>
-        <li>No harassment, doxxing, or threats.</li>
-        <li>Off-topic comments may be removed at my discretion.</li>
-        <li>
-          Comments are public and visible to anyone visiting the page. Don&apos;t share anything
-          you wouldn&apos;t want archived.
-        </li>
-      </ul>
+      <h2>Comments</h2>
       <p>
-        Comments require approval before they appear publicly. To request removal of a comment,
-        email me at the address below.
+        There&apos;s no comment system on the site right now. If you want to reach me about
+        something you read, email me at the address below.
       </p>
 
       <h2>Email &amp; contact</h2>

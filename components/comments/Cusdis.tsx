@@ -62,7 +62,7 @@ export default function Cusdis({ pageId, title, url }: Props) {
   return (
     <section ref={sectionRef} className="mt-12 border-t border-border pt-8">
       <h2 className="font-display text-2xl mb-4">Comments</h2>
-      <div className="bg-[#111827] rounded p-3">
+      <div className="bg-bg rounded">
         <div
           id="cusdis_thread"
           data-host={HOST}

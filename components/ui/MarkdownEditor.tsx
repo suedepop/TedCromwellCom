@@ -8,6 +8,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { Markdown } from "tiptap-markdown";
 import { useEffect } from "react";
+import { youtubeEmbedUrl } from "@/lib/youtube";
 
 interface Props {
   value: string;
@@ -78,6 +79,24 @@ export default function MarkdownEditor({ value, onChange }: Props) {
           Link
         </button>
         <span className="mx-1 border-l border-border" />
+        <button
+          type="button"
+          className={btn(false)}
+          onClick={() => {
+            const url = window.prompt("YouTube URL (watch, share, embed, or shorts link)");
+            if (!url) return;
+            const embed = youtubeEmbedUrl(url.trim());
+            if (!embed) {
+              alert("Couldn't parse that as a YouTube URL.");
+              return;
+            }
+            const html = `<div style="position:relative;padding-bottom:56.25%;margin:1.5rem 0;border-radius:0.25rem;overflow:hidden;background:#000"><iframe src="${embed}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div>`;
+            editor.chain().focus().insertContent(html).run();
+          }}
+          title="Embed a full-width YouTube video"
+        >
+          ▶ YouTube
+        </button>
         <button
           type="button"
           className={btn(false)}

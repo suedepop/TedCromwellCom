@@ -9,6 +9,7 @@ import { TableCell } from "@tiptap/extension-table-cell";
 import { Markdown } from "tiptap-markdown";
 import { useEffect } from "react";
 import { youtubeId } from "@/lib/youtube";
+import { instagramPath } from "@/lib/instagram";
 
 interface Props {
   value: string;
@@ -104,6 +105,30 @@ export default function MarkdownEditor({ value, onChange }: Props) {
           title="Embed a full-width YouTube video"
         >
           ▶ YouTube
+        </button>
+        <button
+          type="button"
+          className={btn(false)}
+          onClick={() => {
+            const url = window.prompt("Instagram post / reel / IGTV URL");
+            if (!url) return;
+            const path = instagramPath(url.trim());
+            if (!path) {
+              alert("Couldn't parse that as an Instagram URL.");
+              return;
+            }
+            editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: "paragraph",
+                content: [{ type: "text", text: `@instagram[${path}]` }],
+              })
+              .run();
+          }}
+          title="Embed an Instagram post or reel"
+        >
+          ◧ Instagram
         </button>
         <button
           type="button"

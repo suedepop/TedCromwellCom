@@ -4,8 +4,9 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 
-const YOUTUBE_MARKER = /@youtube\[([A-Za-z0-9_-]{6,15})\]/g;
-const INSTAGRAM_MARKER = /@instagram\[((?:p|reel|tv)\/[A-Za-z0-9_-]+)\]/g;
+// Brackets may be backslash-escaped because tiptap-markdown escapes them when serializing text.
+const YOUTUBE_MARKER = /@youtube\\?\[([A-Za-z0-9_-]{6,15})\\?\]/g;
+const INSTAGRAM_MARKER = /@instagram\\?\[((?:p|reel|tv)\/[A-Za-z0-9_-]+)\\?\]/g;
 
 function expandMarkers(md: string): string {
   let out = md.replace(

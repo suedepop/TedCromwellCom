@@ -19,7 +19,7 @@ export default function ConcertsInfiniteList({ initialItems, total, pageSize, qu
       pageSize={pageSize}
       fetchUrl={fetchUrl}
       keyOf={(c) => c.id}
-      gridClass="grid sm:grid-cols-2 md:grid-cols-3 gap-4"
+      gridClass="grid sm:grid-cols-2 gap-4"
       renderItem={(c) => <ConcertCard concert={c} />}
     />
   );

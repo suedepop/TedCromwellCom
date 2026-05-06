@@ -123,7 +123,7 @@ export default async function ConcertDetail({ params }: { params: { id: string }
         </section>
       )}
 
-      {concert.photos.length > 0 && (
+      {concert.photos.filter((p) => p.id !== featured?.id).length > 0 && (
         <section>
           <h2 className="font-display text-2xl mb-3">Photos</h2>
           <PhotoLightbox

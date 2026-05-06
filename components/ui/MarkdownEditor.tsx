@@ -8,7 +8,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { Markdown } from "tiptap-markdown";
 import { useEffect } from "react";
-import { youtubeEmbedUrl } from "@/lib/youtube";
+import { youtubeId } from "@/lib/youtube";
 
 interface Props {
   value: string;
@@ -85,13 +85,21 @@ export default function MarkdownEditor({ value, onChange }: Props) {
           onClick={() => {
             const url = window.prompt("YouTube URL (watch, share, embed, or shorts link)");
             if (!url) return;
-            const embed = youtubeEmbedUrl(url.trim());
-            if (!embed) {
+            const id = youtubeId(url.trim());
+            if (!id) {
               alert("Couldn't parse that as a YouTube URL.");
               return;
             }
-            const html = `<div style="position:relative;padding-bottom:56.25%;margin:1.5rem 0;border-radius:0.25rem;overflow:hidden;background:#000"><iframe src="${embed}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div>`;
-            editor.chain().focus().insertContent(html).run();
+            // Marker token that PostBody rewrites to a full-width iframe at render time.
+            // Wrapped in blank lines so it sits as its own paragraph in markdown.
+            editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: "paragraph",
+                content: [{ type: "text", text: `@youtube[${id}]` }],
+              })
+              .run();
           }}
           title="Embed a full-width YouTube video"
         >

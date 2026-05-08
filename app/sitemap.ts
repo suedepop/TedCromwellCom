@@ -3,14 +3,18 @@ import { listPosts } from "@/lib/blog";
 import { listConcerts } from "@/lib/concerts";
 import { listVenues } from "@/lib/venues";
 import { listTravelEntries } from "@/lib/travel";
+import { listRecords } from "@/lib/records";
+import { listArtists } from "@/lib/artists";
 import { siteUrl } from "@/lib/metadata";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, concerts, venues, travel] = await Promise.all([
+  const [posts, concerts, venues, travel, records, artists] = await Promise.all([
     listPosts("published").catch(() => []),
     listConcerts().catch(() => []),
     listVenues().catch(() => []),
     listTravelEntries().catch(() => []),
+    listRecords().catch(() => []),
+    listArtists().catch(() => []),
   ]);
 
   const now = new Date().toISOString();
@@ -21,6 +25,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: siteUrl("/concerts"), lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: siteUrl("/venues"), lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: siteUrl("/travel"), lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: siteUrl("/vinyl"), lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: siteUrl("/artists"), lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: siteUrl("/resume"), lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: siteUrl("/search"), lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: siteUrl("/experiments"), lastModified: now, changeFrequency: "monthly", priority: 0.4 },
@@ -56,5 +62,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...postEntries, ...concertEntries, ...venueEntries, ...travelEntries];
+  const recordEntries = records.map<MetadataRoute.Sitemap[number]>((r) => ({
+    url: siteUrl(`/vinyl/${r.slug ?? r.id}`),
+    lastModified: r.updatedAt ?? now,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+
+  const artistEntries = artists.map<MetadataRoute.Sitemap[number]>((a) => ({
+    url: siteUrl(`/artists/${a.slug}`),
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.4,
+  }));
+
+  return [
+    ...staticEntries,
+    ...postEntries,
+    ...concertEntries,
+    ...venueEntries,
+    ...travelEntries,
+    ...recordEntries,
+    ...artistEntries,
+  ];
 }

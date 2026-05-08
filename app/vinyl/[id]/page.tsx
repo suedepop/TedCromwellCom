@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { findRecordBySlugOrId } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
+import { buildArtistSlug } from "@/lib/artists";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +42,16 @@ export default async function RecordDetail({ params }: { params: { id: string } 
           <div>
             <p className="text-sm text-muted">{record.year ?? ""}</p>
             <h1 className="font-display text-3xl md:text-4xl mt-1">{record.title}</h1>
-            <p className="text-lg text-muted mt-2">{artists}</p>
+            <p className="text-lg text-muted mt-2">
+              {record.artists.map((a, i) => (
+                <span key={`${a.id}-${i}`}>
+                  {i > 0 && " · "}
+                  <Link href={`/artists/${buildArtistSlug(a.name)}`} className="hover:text-accent">
+                    {a.name}
+                  </Link>
+                </span>
+              ))}
+            </p>
           </div>
 
           <dl className="space-y-1 text-sm">

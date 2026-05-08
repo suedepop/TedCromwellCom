@@ -1,9 +1,20 @@
+import Link from "next/link";
 import type { Setlist } from "@/lib/types";
+import { buildArtistSlug } from "@/lib/artists";
 
 export default function SetlistBlock({ setlist }: { setlist: Setlist }) {
+  const slug = setlist.artist ? buildArtistSlug(setlist.artist) : "";
   return (
     <div className="border-l-2 border-accent pl-4 space-y-2">
-      <h3 className="font-display text-2xl">{setlist.artist}</h3>
+      <h3 className="font-display text-2xl">
+        {slug ? (
+          <Link href={`/artists/${slug}`} className="hover:text-accent">
+            {setlist.artist}
+          </Link>
+        ) : (
+          setlist.artist
+        )}
+      </h3>
       {setlist.songs.length === 0 ? (
         <p className="text-muted text-sm italic">No setlist recorded.</p>
       ) : (

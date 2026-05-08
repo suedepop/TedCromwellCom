@@ -1,18 +1,37 @@
 import { containers } from "./cosmos";
 import type { VinylRecord } from "./types";
 
-export async function listRecords(opts: { includeHidden?: boolean } = {}): Promise<VinylRecord[]> {
+export type RecordSort = "artist" | "added" | "year";
+
+export async function listRecords(
+  opts: { includeHidden?: boolean; sort?: RecordSort } = {},
+): Promise<VinylRecord[]> {
   const where = opts.includeHidden ? "" : "WHERE c.hidden != true OR NOT IS_DEFINED(c.hidden)";
   const { resources } = await containers.records.items
     .query<VinylRecord>({ query: `SELECT * FROM c ${where}` })
     .fetchAll();
-  // Sort by date added desc, then by year desc as fallback
-  resources.sort((a, b) => {
-    const ad = a.addedToCollectionAt ?? "";
-    const bd = b.addedToCollectionAt ?? "";
-    if (ad !== bd) return bd.localeCompare(ad);
-    return (b.year ?? 0) - (a.year ?? 0);
-  });
+  const sort = opts.sort ?? "artist";
+  if (sort === "added") {
+    resources.sort((a, b) => {
+      const ad = a.addedToCollectionAt ?? "";
+      const bd = b.addedToCollectionAt ?? "";
+      if (ad !== bd) return bd.localeCompare(ad);
+      return (b.year ?? 0) - (a.year ?? 0);
+    });
+  } else if (sort === "year") {
+    resources.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+  } else {
+    // "artist" — primary artist name asc, then release year desc, then title asc
+    resources.sort((a, b) => {
+      const an = (a.artists[0]?.name ?? "").toLowerCase();
+      const bn = (b.artists[0]?.name ?? "").toLowerCase();
+      if (an !== bn) return an.localeCompare(bn, undefined, { sensitivity: "base" });
+      const ay = a.year ?? 0;
+      const by = b.year ?? 0;
+      if (ay !== by) return by - ay;
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    });
+  }
   return resources;
 }
 

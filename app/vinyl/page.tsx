@@ -1,4 +1,4 @@
-import RecordCard from "@/components/vinyl/RecordCard";
+import VinylInfiniteList from "./VinylInfiniteList";
 import { listRecords } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
 
@@ -9,22 +9,21 @@ export const metadata = pageMetadata({
 });
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 16;
+
 export default async function VinylPage() {
-  const records = await listRecords();
+  const all = await listRecords({ sort: "artist" });
+  const initial = all.slice(0, PAGE_SIZE);
   return (
     <section className="space-y-8">
       <header>
         <h1 className="font-display text-4xl">Vinyl</h1>
-        <p className="text-muted mt-2">{records.length} records in the collection.</p>
+        <p className="text-muted mt-2">{all.length} records in the collection.</p>
       </header>
-      {records.length === 0 ? (
+      {all.length === 0 ? (
         <p className="text-muted">No records yet — run an import from the admin.</p>
       ) : (
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {records.map((r) => (
-            <RecordCard key={r.id} record={r} />
-          ))}
-        </div>
+        <VinylInfiniteList initialItems={initial} total={all.length} pageSize={PAGE_SIZE} />
       )}
     </section>
   );

@@ -4,7 +4,7 @@ import { listRecords } from "@/lib/records";
 export const dynamic = "force-dynamic";
 
 export default async function AdminRecordsList() {
-  const records = await listRecords({ includeHidden: true });
+  const records = await listRecords({ includeHidden: true, sort: "added" });
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">

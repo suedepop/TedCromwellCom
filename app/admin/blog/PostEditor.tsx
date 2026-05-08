@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { BlogPost } from "@/lib/types";
 
 import UploadDropzone from "@/components/media/UploadDropzone";
+import FacebookPostButton from "@/components/admin/FacebookPostButton";
 
 const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 
@@ -96,6 +97,9 @@ export default function PostEditor({ post }: Props) {
           )}
         </div>
       </div>
+      {post && status === "published" && postType !== "html" && (
+        <FacebookPostButton type="blog" id={post.id} />
+      )}
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
       <Field label="Post type">

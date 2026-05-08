@@ -6,6 +6,7 @@ import type { Concert, Photo, Setlist, TicketStub, Venue } from "@/lib/types";
 import SortablePhotos from "@/components/media/SortablePhotos";
 import UploadDropzone from "@/components/media/UploadDropzone";
 import SetlistSortable from "@/components/concerts/SetlistSortable";
+import FacebookPostButton from "@/components/admin/FacebookPostButton";
 
 const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 
@@ -180,6 +181,7 @@ export default function ConcertEditor({
           </button>
         </div>
       </div>
+      <FacebookPostButton type="concert" id={concert.id} />
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <p className="text-xs text-muted">
         Artists & songs are imported from setlist.fm — re-import to refresh. Editable fields below.

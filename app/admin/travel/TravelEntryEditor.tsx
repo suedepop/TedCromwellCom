@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import type { Photo, TravelEntry } from "@/lib/types";
 import UploadDropzone from "@/components/media/UploadDropzone";
 import SortablePhotos from "@/components/media/SortablePhotos";
+import FacebookPostButton from "@/components/admin/FacebookPostButton";
 
 const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 const LocationPicker = dynamic(() => import("@/components/travel/LocationPicker"), {
@@ -131,6 +132,7 @@ export default function TravelEntryEditor({ entry }: Props) {
           )}
         </div>
       </div>
+      {entry && <FacebookPostButton type="travel" id={entry.id} />}
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
       <Field label="Location name">

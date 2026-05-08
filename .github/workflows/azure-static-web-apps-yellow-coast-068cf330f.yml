@@ -27,6 +27,7 @@ jobs:
           # them into the client bundle. These are public values.
           NEXT_PUBLIC_BASE_URL: https://www.tedcromwell.com
           NEXT_PUBLIC_GA_ID: G-M6S7VG2ZL8
+        # FB_PAGE_ID and FB_PAGE_ACCESS_TOKEN are runtime-only; no need at build time.
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_COAST_068CF330F }}
           repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)

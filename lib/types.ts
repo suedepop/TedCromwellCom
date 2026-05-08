@@ -145,6 +145,40 @@ export interface Resume {
   updatedAt: string;
 }
 
+export interface RecordArtist {
+  id: number;
+  name: string;
+}
+
+export interface RecordLabel {
+  name: string;
+  catno?: string;
+}
+
+export interface VinylRecord {
+  id: string;                       // Cosmos id (we use the discogs release id stringified)
+  slug: string;
+  discogsReleaseId: number;
+  discogsMasterId?: number;
+  title: string;
+  artists: RecordArtist[];
+  year?: number;
+  formats: string[];                // flattened format descriptors ["LP", "Album", "Reissue"]
+  primaryFormat: string;            // e.g. "Vinyl, LP" — for display
+  labels: RecordLabel[];
+  genres: string[];
+  styles: string[];
+  coverImageUrl?: string;
+  thumbnailUrl?: string;
+  resourceUrl?: string;             // discogs API URL
+  permalinkUrl: string;             // public discogs page
+  notes?: string;
+  hidden?: boolean;                 // exclude from public listings
+  addedToCollectionAt?: string;
+  importedAt: string;
+  updatedAt: string;
+}
+
 export interface SearchIndexEntry {
   id: string;
   type: "post" | "concert" | "trip";

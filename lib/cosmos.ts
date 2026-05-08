@@ -37,7 +37,7 @@ export const db = new Proxy({} as Database, {
   },
 });
 
-export type ContainerName = "posts" | "concerts" | "venues" | "trips" | "places" | "resume";
+export type ContainerName = "posts" | "concerts" | "venues" | "trips" | "places" | "resume" | "records";
 
 export const containers = new Proxy({} as Record<ContainerName, Container>, {
   get: (_t, prop: string | symbol) => {

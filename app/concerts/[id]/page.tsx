@@ -11,6 +11,9 @@ import { findConcertBySlugOrId } from "@/lib/concerts";
 import { getVenue } from "@/lib/venues";
 import { concertBandLine } from "@/lib/concertDisplay";
 import { youtubeEmbedUrl } from "@/lib/youtube";
+import { listRecords } from "@/lib/records";
+import { buildArtistSlug } from "@/lib/artists";
+import RecordCard from "@/components/vinyl/RecordCard";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +44,26 @@ export default async function ConcertDetail({ params }: { params: { id: string }
   const venue = await getVenue(concert.venueId);
   const featured =
     concert.photos.find((p) => p.id === concert.featuredPhotoId) ?? concert.photos[0];
+
+  // Records in the collection by any artist who played this show.
+  const bandSlugs = new Set(
+    concert.setlists
+      .map((s) => s.artist)
+      .filter(Boolean)
+      .map((n) => buildArtistSlug(n)),
+  );
+  const allRecords = bandSlugs.size > 0 ? await listRecords().catch(() => []) : [];
+  const matchedRecords = allRecords
+    .filter((r) =>
+      r.artists.some((a) => bandSlugs.has(buildArtistSlug(a.name))),
+    )
+    // Sort by primary artist (in setlist order if possible), then year desc
+    .sort((a, b) => {
+      const an = (a.artists[0]?.name ?? "").toLowerCase();
+      const bn = (b.artists[0]?.name ?? "").toLowerCase();
+      if (an !== bn) return an.localeCompare(bn);
+      return (b.year ?? 0) - (a.year ?? 0);
+    });
 
   return (
     <article className="space-y-8 max-w-3xl mx-auto">
@@ -166,6 +189,22 @@ export default async function ConcertDetail({ params }: { params: { id: string }
         <section>
           <h2 className="font-display text-2xl mb-3">Notes</h2>
           <p className="whitespace-pre-wrap text-sm">{concert.notes}</p>
+        </section>
+      )}
+
+      {matchedRecords.length > 0 && (
+        <section>
+          <h2 className="font-display text-2xl mb-1">From My Collection</h2>
+          <p className="text-sm text-muted mb-3">
+            {matchedRecords.length} {matchedRecords.length === 1 ? "record" : "records"} in my vinyl
+            collection by{" "}
+            {concert.setlists.length === 1 ? "this artist" : "these artists"}.
+          </p>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {matchedRecords.map((r) => (
+              <RecordCard key={r.id} record={r} />
+            ))}
+          </div>
         </section>
       )}
     </article>

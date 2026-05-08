@@ -10,6 +10,7 @@ const adminLinks = [
   { href: "/admin/concerts", label: "Concerts" },
   { href: "/admin/venues", label: "Venues" },
   { href: "/admin/travel", label: "Travel" },
+  { href: "/admin/records", label: "Vinyl" },
   { href: "/admin/resume", label: "Resume" },
 ];
 

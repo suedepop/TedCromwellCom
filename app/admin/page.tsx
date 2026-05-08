@@ -3,7 +3,8 @@ import Link from "next/link";
 const cards = [
   { title: "Blog", href: "/admin/blog", action: "New Post", actionHref: "/admin/blog/new" },
   { title: "Concerts", href: "/admin/concerts", action: "Run Import", actionHref: "/admin/concerts/import" },
-  { title: "Travel", href: "/admin/travel", action: "Add Trip", actionHref: "/admin/travel/trips/new" },
+  { title: "Travel", href: "/admin/travel", action: "Add Trip", actionHref: "/admin/travel/new" },
+  { title: "Vinyl", href: "/admin/records", action: "Import Discogs", actionHref: "/admin/records/import" },
   { title: "Resume", href: "/admin/resume", action: "Edit Resume", actionHref: "/admin/resume" },
 ];
 

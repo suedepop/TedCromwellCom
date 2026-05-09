@@ -6,6 +6,8 @@ import { findTravelEntryBySlugOrId } from "@/lib/travel";
 import { concertBandLine } from "@/lib/concertDisplay";
 import { postToFacebookPage } from "@/lib/facebook";
 import { siteUrl } from "@/lib/metadata";
+import { containers } from "@/lib/cosmos";
+import type { BlogPost, Concert, TravelEntry } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,9 +51,12 @@ export async function POST(req: Request) {
   let message = "";
   let link = "";
   let images: string[] = [];
+  let post: BlogPost | null = null;
+  let concert: Concert | null = null;
+  let entry: TravelEntry | null = null;
 
   if (body.type === "blog") {
-    const post = (await findPostById(body.id)) ?? (await findPostBySlug(body.id));
+    post = (await findPostById(body.id)) ?? (await findPostBySlug(body.id));
     if (!post) return NextResponse.json({ error: "post not found" }, { status: 404 });
     if (post.status !== "published") {
       return NextResponse.json({ error: "post is not published" }, { status: 400 });
@@ -61,7 +66,7 @@ export async function POST(req: Request) {
     message = `${post.title}\n\n${bodyText}\n\nRead the full post: ${link}`;
     if (post.coverImageUrl) images = [post.coverImageUrl];
   } else if (body.type === "concert") {
-    const concert = await findConcertBySlugOrId(body.id);
+    concert = await findConcertBySlugOrId(body.id);
     if (!concert) return NextResponse.json({ error: "concert not found" }, { status: 404 });
     link = siteUrl(`/concerts/${concert.slug ?? concert.id}`);
     const date = new Date(concert.date).toLocaleDateString(undefined, { dateStyle: "long" });
@@ -72,7 +77,7 @@ export async function POST(req: Request) {
     message = `${title}\n${date} · ${concert.venueNameRaw} · ${concert.city}${writeUp}\n\nRead more: ${link}`;
     images = concert.photos.map((p) => p.blobUrl);
   } else if (body.type === "travel") {
-    const entry = await findTravelEntryBySlugOrId(body.id);
+    entry = await findTravelEntryBySlugOrId(body.id);
     if (!entry) return NextResponse.json({ error: "travel entry not found" }, { status: 404 });
     link = siteUrl(`/travel/${entry.slug ?? entry.id}`);
     const dateRange =
@@ -95,7 +100,41 @@ export async function POST(req: Request) {
 
   try {
     const result = await postToFacebookPage({ message, imageUrls: images, link });
-    return NextResponse.json({ ok: true, postUrl: result.url, fbId: result.id, attached: images.length });
+    const postedAt = new Date().toISOString();
+    // Persist the FB post timestamp + URL on the entity. Don't fail the request if this part errors.
+    try {
+      if (post) {
+        const updated: BlogPost = {
+          ...post,
+          lastPostedToFacebookAt: postedAt,
+          lastPostedToFacebookUrl: result.url,
+        };
+        await containers.posts.item(post.id, post.status).replace(updated);
+      } else if (concert) {
+        const updated: Concert = {
+          ...concert,
+          lastPostedToFacebookAt: postedAt,
+          lastPostedToFacebookUrl: result.url,
+        };
+        await containers.concerts.item(concert.id, concert.venueId).replace(updated);
+      } else if (entry) {
+        const updated: TravelEntry = {
+          ...entry,
+          lastPostedToFacebookAt: postedAt,
+          lastPostedToFacebookUrl: result.url,
+        };
+        await containers.trips.item(entry.id, entry.id).replace(updated);
+      }
+    } catch (e) {
+      console.error("Failed to persist Facebook post timestamp:", e);
+    }
+    return NextResponse.json({
+      ok: true,
+      postUrl: result.url,
+      fbId: result.id,
+      attached: images.length,
+      lastPostedAt: postedAt,
+    });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

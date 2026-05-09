@@ -6,11 +6,40 @@ interface Props {
   id: string;
   /** Disable when the entity hasn't been saved yet, etc. */
   disabled?: boolean;
+  /** ISO timestamp of the last successful post to Facebook, if any. */
+  lastPostedAt?: string;
+  /** Permalink to the most recent Facebook post, if any. */
+  lastPostedUrl?: string;
 }
 
-export default function FacebookPostButton({ type, id, disabled = false }: Props) {
+function formatPostedDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export default function FacebookPostButton({
+  type,
+  id,
+  disabled = false,
+  lastPostedAt,
+  lastPostedUrl,
+}: Props) {
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; postUrl?: string; error?: string; attached?: number } | null>(null);
+  const [result, setResult] = useState<{
+    ok: boolean;
+    postUrl?: string;
+    error?: string;
+    attached?: number;
+  } | null>(null);
+  const [posted, setPosted] = useState<{ at?: string; url?: string }>({
+    at: lastPostedAt,
+    url: lastPostedUrl,
+  });
 
   async function go() {
     if (
@@ -33,6 +62,7 @@ export default function FacebookPostButton({ type, id, disabled = false }: Props
       setResult({ ok: false, error: data.error ?? `HTTP ${res.status}` });
     } else {
       setResult({ ok: true, postUrl: data.postUrl, attached: data.attached });
+      setPosted({ at: data.lastPostedAt ?? new Date().toISOString(), url: data.postUrl });
     }
   }
 
@@ -47,6 +77,19 @@ export default function FacebookPostButton({ type, id, disabled = false }: Props
       >
         {busy ? "Posting…" : "Post to Facebook"}
       </button>
+      {posted.at && (
+        <p className="text-xs text-muted">
+          Last posted to Facebook on {formatPostedDate(posted.at)}
+          {posted.url && (
+            <>
+              {" · "}
+              <a href={posted.url} target="_blank" rel="noreferrer" className="underline hover:text-accent">
+                View ↗
+              </a>
+            </>
+          )}
+        </p>
+      )}
       {result?.ok && (
         <p className="text-xs text-accent">
           Posted ({result.attached ?? 0} images).{" "}

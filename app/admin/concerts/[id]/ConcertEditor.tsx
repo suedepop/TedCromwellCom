@@ -181,7 +181,12 @@ export default function ConcertEditor({
           </button>
         </div>
       </div>
-      <FacebookPostButton type="concert" id={concert.id} />
+      <FacebookPostButton
+        type="concert"
+        id={concert.id}
+        lastPostedAt={concert.lastPostedToFacebookAt}
+        lastPostedUrl={concert.lastPostedToFacebookUrl}
+      />
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <p className="text-xs text-muted">
         Artists & songs are imported from setlist.fm — re-import to refresh. Editable fields below.

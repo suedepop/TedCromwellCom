@@ -132,7 +132,14 @@ export default function TravelEntryEditor({ entry }: Props) {
           )}
         </div>
       </div>
-      {entry && <FacebookPostButton type="travel" id={entry.id} />}
+      {entry && (
+        <FacebookPostButton
+          type="travel"
+          id={entry.id}
+          lastPostedAt={entry.lastPostedToFacebookAt}
+          lastPostedUrl={entry.lastPostedToFacebookUrl}
+        />
+      )}
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
       <Field label="Location name">

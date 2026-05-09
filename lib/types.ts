@@ -11,6 +11,8 @@ export interface BlogPost {
   status: "draft" | "published";
   publishedAt?: string;
   updatedAt: string;
+  lastPostedToFacebookAt?: string;
+  lastPostedToFacebookUrl?: string;
 }
 
 export interface Song {
@@ -71,6 +73,8 @@ export interface Concert {
   setlistFmIds: string[];
   importedAt: string;
   updatedAt: string;
+  lastPostedToFacebookAt?: string;
+  lastPostedToFacebookUrl?: string;
 }
 
 export interface Venue {
@@ -108,6 +112,8 @@ export interface TravelEntry {
   featuredPhotoId?: string;
   publishedAt?: string;   // ISO — controls ordering
   updatedAt: string;
+  lastPostedToFacebookAt?: string;
+  lastPostedToFacebookUrl?: string;
 }
 
 export interface ResumeEntry {

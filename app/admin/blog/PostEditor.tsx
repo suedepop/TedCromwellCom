@@ -98,7 +98,12 @@ export default function PostEditor({ post }: Props) {
         </div>
       </div>
       {post && status === "published" && postType !== "html" && (
-        <FacebookPostButton type="blog" id={post.id} />
+        <FacebookPostButton
+          type="blog"
+          id={post.id}
+          lastPostedAt={post.lastPostedToFacebookAt}
+          lastPostedUrl={post.lastPostedToFacebookUrl}
+        />
       )}
       {error && <p className="text-red-400 text-sm">{error}</p>}
 

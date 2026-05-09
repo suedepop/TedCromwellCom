@@ -19,7 +19,7 @@ const experiments: Experiment[] = [
     slug: "dashboard",
     title: "Content update dashboard",
     description:
-      "When am I actually adding to this site? A bar chart of blog posts, concerts, and travel entries grouped by month.",
+      "When am I actually adding to this site? A bar chart of blog posts, concerts, travel entries, venues, and vinyl records grouped by time.",
     date: "2026-05",
   },
 ];

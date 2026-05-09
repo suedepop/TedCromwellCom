@@ -3,6 +3,7 @@ import { listPosts } from "@/lib/blog";
 import { listConcerts } from "@/lib/concerts";
 import { listTravelEntries } from "@/lib/travel";
 import { listVenues } from "@/lib/venues";
+import { listRecords } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata({
@@ -16,6 +17,7 @@ const COLOR_BLOG = "#e8a030";
 const COLOR_CONCERT = "#60a5fa";
 const COLOR_TRAVEL = "#34d399";
 const COLOR_VENUE = "#c084fc";
+const COLOR_VINYL = "#f472b6";
 
 type RangeKey = "60d" | "180d" | "1y" | "2y";
 
@@ -116,6 +118,7 @@ interface Bucket {
   concert: number;
   travel: number;
   venue: number;
+  vinyl: number;
 }
 
 export default async function DashboardPage({
@@ -126,16 +129,18 @@ export default async function DashboardPage({
   const spec =
     RANGES.find((r) => r.key === (searchParams.range as RangeKey)) ?? RANGES[0];
 
-  const [posts, concerts, travel, venues] = await Promise.all([
+  const [posts, concerts, travel, venues, records] = await Promise.all([
     listPosts("published").catch(() => []),
     listConcerts().catch(() => []),
     listTravelEntries().catch(() => []),
     listVenues().catch(() => []),
+    listRecords({ includeHidden: true }).catch(() => []),
   ]);
 
   const keys = buildBucketKeys(spec);
   const buckets: Record<string, Bucket> = {};
-  for (const k of keys) buckets[k] = { key: k, blog: 0, concert: 0, travel: 0, venue: 0 };
+  for (const k of keys)
+    buckets[k] = { key: k, blog: 0, concert: 0, travel: 0, venue: 0, vinyl: 0 };
 
   for (const p of posts) {
     const k = keyOf(p.updatedAt ?? p.publishedAt, spec.granularity);
@@ -159,12 +164,14 @@ export default async function DashboardPage({
       if (k && buckets[k]) buckets[k].venue += 1;
     }
   }
+  for (const r of records) {
+    const k = keyOf(r.updatedAt ?? r.importedAt, spec.granularity);
+    if (k && buckets[k]) buckets[k].vinyl += 1;
+  }
 
   const series = keys.map((k) => buckets[k]);
-  const maxTotal = Math.max(
-    1,
-    ...series.map((b) => b.blog + b.concert + b.travel + b.venue),
-  );
+  const totalOf = (b: Bucket) => b.blog + b.concert + b.travel + b.venue + b.vinyl;
+  const maxTotal = Math.max(1, ...series.map(totalOf));
 
   // Totals (visible window only)
   const inWindow = series.reduce(
@@ -173,18 +180,19 @@ export default async function DashboardPage({
       acc.concert += b.concert;
       acc.travel += b.travel;
       acc.venue += b.venue;
+      acc.vinyl += b.vinyl;
       return acc;
     },
-    { blog: 0, concert: 0, travel: 0, venue: 0 },
+    { blog: 0, concert: 0, travel: 0, venue: 0, vinyl: 0 },
   );
-  const grandInWindow = inWindow.blog + inWindow.concert + inWindow.travel + inWindow.venue;
+  const grandInWindow =
+    inWindow.blog + inWindow.concert + inWindow.travel + inWindow.venue + inWindow.vinyl;
 
   // Most-active bucket within the visible window
   const mostActive = series.reduce<Bucket | null>((best, b) => {
-    const t = b.blog + b.concert + b.travel + b.venue;
+    const t = totalOf(b);
     if (!best) return t > 0 ? b : null;
-    const bt = best.blog + best.concert + best.travel + best.venue;
-    return t > bt ? b : best;
+    return t > totalOf(best) ? b : best;
   }, null);
 
   const barWidth = spec.granularity === "day" ? 14 : spec.granularity === "week" ? 22 : 28;
@@ -218,12 +226,13 @@ export default async function DashboardPage({
         ))}
       </nav>
 
-      <dl className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+      <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <Stat label={`Updates · last ${spec.label}`} value={grandInWindow.toLocaleString()} />
         <Stat label="Blog" value={inWindow.blog.toLocaleString()} swatch={COLOR_BLOG} />
         <Stat label="Concerts" value={inWindow.concert.toLocaleString()} swatch={COLOR_CONCERT} />
         <Stat label="Travel" value={inWindow.travel.toLocaleString()} swatch={COLOR_TRAVEL} />
         <Stat label="Venues" value={inWindow.venue.toLocaleString()} swatch={COLOR_VENUE} />
+        <Stat label="Vinyl" value={inWindow.vinyl.toLocaleString()} swatch={COLOR_VINYL} />
       </dl>
 
       <section className="space-y-3">
@@ -234,7 +243,7 @@ export default async function DashboardPage({
         <div className="border border-border bg-surface rounded p-4 overflow-x-auto">
           <div className="flex items-stretch gap-1 h-48 min-w-max">
             {series.map((b) => {
-              const total = b.blog + b.concert + b.travel + b.venue;
+              const total = totalOf(b);
               const heightPct = (total / maxTotal) * 100;
               return (
                 <div
@@ -252,7 +261,7 @@ export default async function DashboardPage({
                       height: `${Math.max(heightPct, total > 0 ? 2 : 0)}%`,
                       minHeight: total > 0 ? 4 : 0,
                     }}
-                    title={`${bucketLabel(b.key, spec.granularity)} — Blog ${b.blog} · Concerts ${b.concert} · Travel ${b.travel} · Venues ${b.venue}`}
+                    title={`${bucketLabel(b.key, spec.granularity)} — Blog ${b.blog} · Concerts ${b.concert} · Travel ${b.travel} · Venues ${b.venue} · Vinyl ${b.vinyl}`}
                   >
                     {b.blog > 0 && <div style={{ flex: b.blog, backgroundColor: COLOR_BLOG }} />}
                     {b.concert > 0 && (
@@ -262,6 +271,7 @@ export default async function DashboardPage({
                       <div style={{ flex: b.travel, backgroundColor: COLOR_TRAVEL }} />
                     )}
                     {b.venue > 0 && <div style={{ flex: b.venue, backgroundColor: COLOR_VENUE }} />}
+                    {b.vinyl > 0 && <div style={{ flex: b.vinyl, backgroundColor: COLOR_VINYL }} />}
                   </div>
                 </div>
               );
@@ -287,8 +297,8 @@ export default async function DashboardPage({
           <p className="text-sm text-muted">
             Busiest in window: <strong className="text-ink">{bucketLabel(mostActive.key, spec.granularity)}</strong>
             {" "}with{" "}
-            {mostActive.blog + mostActive.concert + mostActive.travel + mostActive.venue}
-            {" "}items ({mostActive.blog} blog, {mostActive.concert} concerts, {mostActive.travel} travel, {mostActive.venue} venues).
+            {totalOf(mostActive)}
+            {" "}items ({mostActive.blog} blog, {mostActive.concert} concerts, {mostActive.travel} travel, {mostActive.venue} venues, {mostActive.vinyl} vinyl).
           </p>
         )}
       </section>
@@ -304,12 +314,13 @@ export default async function DashboardPage({
                 <th className="px-3 py-2 text-right">Concerts</th>
                 <th className="px-3 py-2 text-right">Travel</th>
                 <th className="px-3 py-2 text-right">Venues</th>
+                <th className="px-3 py-2 text-right">Vinyl</th>
                 <th className="px-3 py-2 text-right">Total</th>
               </tr>
             </thead>
             <tbody>
               {[...series].reverse().map((b) => {
-                const total = b.blog + b.concert + b.travel + b.venue;
+                const total = totalOf(b);
                 if (total === 0) return null;
                 return (
                   <tr key={b.key} className="border-t border-border">
@@ -318,13 +329,14 @@ export default async function DashboardPage({
                     <td className="px-3 py-1.5 text-right tabular-nums">{b.concert || ""}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">{b.travel || ""}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">{b.venue || ""}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{b.vinyl || ""}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums font-medium">{total}</td>
                   </tr>
                 );
               })}
               {grandInWindow === 0 && (
                 <tr className="border-t border-border">
-                  <td colSpan={6} className="px-3 py-4 text-center text-muted text-xs">
+                  <td colSpan={7} className="px-3 py-4 text-center text-muted text-xs">
                     No activity in this window.
                   </td>
                 </tr>
@@ -363,6 +375,7 @@ function Legend() {
       <Swatch color={COLOR_CONCERT} label="Concerts" />
       <Swatch color={COLOR_TRAVEL} label="Travel" />
       <Swatch color={COLOR_VENUE} label="Venues" />
+      <Swatch color={COLOR_VINYL} label="Vinyl" />
     </div>
   );
 }

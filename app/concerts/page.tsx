@@ -1,8 +1,9 @@
 import ConcertsInfiniteList from "./ConcertsInfiniteList";
 import TodayInHistory from "@/components/concerts/TodayInHistory";
-import VenueChips from "@/components/concerts/VenueChips";
+import Chips, { type Chip } from "@/components/concerts/Chips";
 import { listConcerts } from "@/lib/concerts";
 import { listVenues } from "@/lib/venues";
+import { buildArtistSlug } from "@/lib/artists";
 import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata({
@@ -47,11 +48,43 @@ export default async function ConcertsPage({
     .filter((c) => c.date && c.date.slice(5) === todayMmDd)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  const venues = await listVenues();
-  const showCounts = new Map<string, number>();
+  // Venue chips — sorted by show count desc
+  const allVenues = await listVenues();
+  const venueShowCounts = new Map<string, number>();
   for (const c of allUnfiltered) {
-    showCounts.set(c.venueId, (showCounts.get(c.venueId) ?? 0) + 1);
+    venueShowCounts.set(c.venueId, (venueShowCounts.get(c.venueId) ?? 0) + 1);
   }
+  const venueChips: Chip[] = [...allVenues]
+    .sort(
+      (a, b) => (venueShowCounts.get(b.id) ?? 0) - (venueShowCounts.get(a.id) ?? 0),
+    )
+    .map((v) => ({
+      href: `/venues/${v.id}`,
+      label: v.canonicalName,
+      count: venueShowCounts.get(v.id),
+    }));
+
+  // Artist chips — count distinct shows per artist, sort by show count desc
+  const artistShowCounts = new Map<string, { name: string; count: number }>();
+  for (const c of allUnfiltered) {
+    const seenInThisShow = new Set<string>();
+    for (const s of c.setlists) {
+      if (!s.artist) continue;
+      const slug = buildArtistSlug(s.artist);
+      if (seenInThisShow.has(slug)) continue;
+      seenInThisShow.add(slug);
+      const prev = artistShowCounts.get(slug);
+      if (prev) prev.count += 1;
+      else artistShowCounts.set(slug, { name: s.artist, count: 1 });
+    }
+  }
+  const artistChips: Chip[] = [...artistShowCounts.entries()]
+    .sort((a, b) => b[1].count - a[1].count || a[1].name.localeCompare(b[1].name))
+    .map(([slug, { name, count }]) => ({
+      href: `/artists/${slug}`,
+      label: name,
+      count,
+    }));
 
   return (
     <section className="space-y-8">
@@ -98,7 +131,20 @@ export default async function ConcertsPage({
         </div>
         <div className="lg:col-span-1 space-y-6">
           <TodayInHistory concerts={todayInHistory} />
-          <VenueChips venues={venues} showCounts={showCounts} />
+          <Chips
+            title="Venues"
+            total={allVenues.length}
+            totalLabel="places"
+            chips={venueChips}
+            initiallyVisible={20}
+          />
+          <Chips
+            title="Artists"
+            total={artistChips.length}
+            totalLabel={artistChips.length === 1 ? "artist" : "artists"}
+            chips={artistChips}
+            initiallyVisible={20}
+          />
         </div>
       </div>
     </section>

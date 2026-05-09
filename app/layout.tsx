@@ -39,6 +39,9 @@ export const metadata: Metadata = {
     images: [siteUrl("/og-default.png")],
   },
   icons: { icon: "/favicon.ico" },
+  verification: {
+    google: "O25B-8DpurJtooI8x760wFw9e4m5arcBSCN5wYPu9s4",
+  },
   alternates: {
     canonical: siteUrl(),
     types: {

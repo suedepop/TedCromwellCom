@@ -60,7 +60,7 @@ export async function findRecordBySlugOrId(value: string): Promise<VinylRecord |
 
 export async function updateRecord(
   id: string,
-  patch: Partial<Pick<VinylRecord, "notes" | "hidden">>,
+  patch: Partial<Pick<VinylRecord, "notes" | "writeUp" | "hidden">>,
 ): Promise<VinylRecord | null> {
   const existing = await getRecord(id);
   if (!existing) return null;

@@ -18,6 +18,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const updated = await updateRecord(params.id, {
     notes: typeof body.notes === "string" ? body.notes : undefined,
+    writeUp: typeof body.writeUp === "string" ? body.writeUp : undefined,
     hidden: typeof body.hidden === "boolean" ? body.hidden : undefined,
   });
   if (!updated) return NextResponse.json({ error: "not found" }, { status: 404 });

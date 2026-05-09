@@ -173,6 +173,7 @@ export interface VinylRecord {
   resourceUrl?: string;             // discogs API URL
   permalinkUrl: string;             // public discogs page
   notes?: string;
+  writeUp?: string;                 // public markdown body, preserved across imports
   hidden?: boolean;                 // exclude from public listings
   addedToCollectionAt?: string;
   importedAt: string;

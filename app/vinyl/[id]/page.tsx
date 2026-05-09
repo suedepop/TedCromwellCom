@@ -4,6 +4,7 @@ import Link from "next/link";
 import { findRecordBySlugOrId } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
 import { buildArtistSlug } from "@/lib/artists";
+import PostBody from "@/components/blog/PostBody";
 
 export const dynamic = "force-dynamic";
 
@@ -89,13 +90,6 @@ export default async function RecordDetail({ params }: { params: { id: string } 
             )}
           </dl>
 
-          {record.notes && (
-            <div>
-              <h2 className="text-xs uppercase tracking-wider text-muted mb-1">Notes</h2>
-              <p className="text-sm whitespace-pre-wrap">{record.notes}</p>
-            </div>
-          )}
-
           <a
             href={record.permalinkUrl}
             target="_blank"
@@ -106,6 +100,8 @@ export default async function RecordDetail({ params }: { params: { id: string } 
           </a>
         </div>
       </div>
+
+      {record.writeUp && <PostBody content={record.writeUp} />}
     </article>
   );
 }

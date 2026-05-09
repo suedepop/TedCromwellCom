@@ -195,6 +195,7 @@ export async function runDiscogsImport(opts: { commit: boolean }): Promise<Disco
           const { resource: prev } = await containers.records.item(id, id).read<VinylRecord>();
           if (prev) {
             doc.notes = prev.notes;
+            doc.writeUp = prev.writeUp;
             doc.hidden = prev.hidden;
             // keep original importedAt
             doc.importedAt = prev.importedAt;

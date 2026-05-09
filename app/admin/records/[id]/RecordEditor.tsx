@@ -1,12 +1,16 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import type { VinylRecord } from "@/lib/types";
 
+const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
+
 export default function RecordEditor({ record }: { record: VinylRecord }) {
   const router = useRouter();
   const [notes, setNotes] = useState(record.notes ?? "");
+  const [writeUp, setWriteUp] = useState(record.writeUp ?? "");
   const [hidden, setHidden] = useState(!!record.hidden);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +21,7 @@ export default function RecordEditor({ record }: { record: VinylRecord }) {
     const res = await fetch(`/api/records/${record.id}`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ notes, hidden }),
+      body: JSON.stringify({ notes, writeUp, hidden }),
     });
     setBusy(false);
     if (!res.ok) return setError(`Save failed: ${res.status}`);
@@ -68,13 +72,20 @@ export default function RecordEditor({ record }: { record: VinylRecord }) {
 
       <p className="text-xs text-muted">
         Title, artists, year, label, format come from Discogs and are overwritten on each import. Use the
-        fields below for site-specific data.
+        fields below for site-specific data — they&apos;re preserved across re-imports.
       </p>
 
       <label className="block space-y-1">
-        <span className="text-xs uppercase tracking-wider text-muted">Notes (private)</span>
+        <span className="text-xs uppercase tracking-wider text-muted">
+          Write-up (markdown — shown on the public record page)
+        </span>
+        <MarkdownEditor value={writeUp} onChange={setWriteUp} />
+      </label>
+
+      <label className="block space-y-1">
+        <span className="text-xs uppercase tracking-wider text-muted">Notes (private — not shown publicly)</span>
         <textarea
-          rows={5}
+          rows={4}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="w-full bg-surface border border-border rounded px-3 py-2 text-sm"

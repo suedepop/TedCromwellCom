@@ -1,9 +1,20 @@
 import Link from "next/link";
 import type { Concert } from "@/lib/types";
-import { concertBandLine } from "@/lib/concertDisplay";
+
+const MAX_BANDS_ON_CARD = 8;
+
+function bandsForCard(concert: Concert): string {
+  const artists = [...concert.setlists]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((s) => s.artist)
+    .filter(Boolean);
+  if (artists.length === 0) return concert.venueNameRaw || "Concert";
+  if (artists.length <= MAX_BANDS_ON_CARD) return artists.join(" · ");
+  return `${artists.slice(0, MAX_BANDS_ON_CARD).join(" · ")} … and more`;
+}
 
 export default function ConcertCard({ concert }: { concert: Concert }) {
-  const bands = concertBandLine(concert);
+  const bands = bandsForCard(concert);
   const featured =
     concert.photos.find((p) => p.id === concert.featuredPhotoId) ?? concert.photos[0];
   const cover = featured?.thumbnailUrl ?? featured?.blobUrl;

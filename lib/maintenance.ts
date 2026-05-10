@@ -274,7 +274,7 @@ export interface LookupMusicBrainzResult {
 const MB_BASE = "https://musicbrainz.org/ws/2/artist/";
 const MB_RATE_DELAY_MS = 1100; // ~0.9 req/s, well under MB's 1/s anonymous limit
 const MB_USER_AGENT =
-  "TedCromwellCom/1.0 (+https://www.tedcromwell.com — personal-site artist alignment)";
+  "TedCromwellCom/1.0 (+https://www.tedcromwell.com - personal-site artist alignment)";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

@@ -7,6 +7,7 @@ const cards = [
   { title: "Vinyl", href: "/admin/records", action: "Import Discogs", actionHref: "/admin/records/import" },
   { title: "Artists", href: "/admin/artists", action: "Manage IDs", actionHref: "/admin/artists" },
   { title: "Resume", href: "/admin/resume", action: "Edit Resume", actionHref: "/admin/resume" },
+  { title: "Maintenance", href: "/admin/maintenance", action: "Run jobs", actionHref: "/admin/maintenance" },
 ];
 
 export default function AdminDashboard() {

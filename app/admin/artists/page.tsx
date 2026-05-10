@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listArtists } from "@/lib/artists";
+import BootstrapArtistsButton from "./BootstrapArtistsButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +32,14 @@ export default async function AdminArtistsList({
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-3xl">Artists</h1>
-        <p className="text-xs text-muted">
-          {totals.storedDocs} of {totals.all} have stored docs · {totals.missingMbid} missing MBID ·{" "}
-          {totals.missingDiscogs} missing Discogs ID
-        </p>
+        <div>
+          <h1 className="font-display text-3xl">Artists</h1>
+          <p className="text-xs text-muted mt-1">
+            {totals.storedDocs} of {totals.all} have stored docs · {totals.missingMbid} missing MBID ·{" "}
+            {totals.missingDiscogs} missing Discogs ID
+          </p>
+        </div>
+        <BootstrapArtistsButton />
       </div>
 
       <form className="flex gap-2 text-sm flex-wrap">

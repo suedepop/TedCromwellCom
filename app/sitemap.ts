@@ -7,6 +7,11 @@ import { listRecords } from "@/lib/records";
 import { listArtists } from "@/lib/artists";
 import { siteUrl } from "@/lib/metadata";
 
+// Render at request time — at build time the Cosmos env vars aren't available,
+// so all dynamic entries would silently fall back to empty arrays.
+export const dynamic = "force-dynamic";
+export const revalidate = 3600; // serve from cache for an hour between regenerations
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [posts, concerts, venues, travel, records, artists] = await Promise.all([
     listPosts("published").catch(() => []),

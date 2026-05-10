@@ -4,6 +4,7 @@ import Link from "next/link";
 import { findRecordBySlugOrId } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
 import { buildArtistSlug } from "@/lib/artists";
+import { jsonLdScript, vinylRecordJsonLd } from "@/lib/jsonld";
 import PostBody from "@/components/blog/PostBody";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,10 @@ export default async function RecordDetail({ params }: { params: { id: string } 
 
   return (
     <article className="space-y-8 max-w-3xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(vinylRecordJsonLd(record)) }}
+      />
       <div className="grid md:grid-cols-2 gap-8">
         <div className="aspect-square bg-black rounded overflow-hidden border border-border">
           {record.coverImageUrl ? (

@@ -21,7 +21,9 @@ function rfc822(d: string | undefined): string {
 }
 
 export async function GET() {
-  const items = (await listFeedAll().catch(() => [])).slice(0, 50);
+  const items = (
+    await listFeedAll({ types: ["blog", "concert", "travel", "vinyl", "venue"] }).catch(() => [])
+  ).slice(0, 50);
   const channelLink = siteUrl();
   const feedLink = siteUrl("/feed.xml");
 
@@ -61,6 +63,30 @@ export async function GET() {
               .trim()
               .slice(0, 240) || `${t.startDate}`;
           categories = ["Travel"];
+          break;
+        }
+        case "vinyl": {
+          const r = item.data;
+          const artists = r.artists.map((a) => a.name).join(" · ");
+          title = `${artists} — ${r.title}`;
+          path = `/vinyl/${r.slug ?? r.id}`;
+          description =
+            (r.writeUp ?? "")
+              .replace(/[#>*_`\[\]\(\)!]/g, "")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 240) ||
+            `${r.year ?? ""} · ${r.primaryFormat}`.trim();
+          categories = ["Vinyl", ...(r.genres ?? []).slice(0, 3)];
+          break;
+        }
+        case "venue": {
+          const v = item.data;
+          title = v.canonicalName;
+          path = `/venues/${v.id}`;
+          const where = [v.city, v.state, v.country].filter(Boolean).join(", ");
+          description = (v.description ?? where).slice(0, 240);
+          categories = ["Venue"];
           break;
         }
       }

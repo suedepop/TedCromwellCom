@@ -1,5 +1,6 @@
-import type { BlogPost, Concert, Resume, TravelEntry, Venue } from "./types";
+import type { BlogPost, Concert, Resume, TravelEntry, Venue, VinylRecord } from "./types";
 import { SITE_NAME, siteUrl } from "./metadata";
+import { buildArtistSlug } from "./artists";
 
 function authorBlock() {
   return { "@type": "Person", name: SITE_NAME, url: siteUrl() };
@@ -219,6 +220,108 @@ export function resumePersonJsonLd(resume: Resume): object {
       endDate: e.endDate,
       description: e.bullets.join(" "),
     })),
+  };
+}
+
+function albumReleaseTypeFromFormat(format: string | undefined): string | undefined {
+  if (!format) return undefined;
+  const f = format.toLowerCase();
+  if (f.includes("compilation")) return "https://schema.org/CompilationRelease";
+  if (f.includes("single")) return "https://schema.org/SingleRelease";
+  if (f.includes("ep")) return "https://schema.org/EPRelease";
+  return "https://schema.org/AlbumRelease";
+}
+
+export function vinylRecordJsonLd(record: VinylRecord): object {
+  const url = siteUrl(`/vinyl/${record.slug ?? record.id}`);
+  const sameAs: string[] = [record.permalinkUrl].filter((u): u is string => !!u);
+  const description = (record.writeUp ?? "")
+    .replace(/[#>*_`\[\]\(\)!]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 240);
+  return {
+    "@context": "https://schema.org",
+    "@type": "MusicAlbum",
+    name: record.title,
+    url,
+    image: record.coverImageUrl ? [record.coverImageUrl] : undefined,
+    byArtist: record.artists.map((a) => ({
+      "@type": "MusicGroup",
+      name: a.name,
+      url: siteUrl(`/artists/${buildArtistSlug(a.name)}`),
+    })),
+    datePublished: record.year ? String(record.year) : undefined,
+    genre: [...(record.genres ?? []), ...(record.styles ?? [])].filter(Boolean),
+    albumReleaseType: albumReleaseTypeFromFormat(record.primaryFormat),
+    recordLabel: record.labels?.map((l) => ({ "@type": "Organization", name: l.name })),
+    sameAs: sameAs.length ? sameAs : undefined,
+    description: description || undefined,
+  };
+}
+
+interface ArtistJsonLdInput {
+  name: string;
+  slug: string;
+  concerts: Concert[];
+  records: VinylRecord[];
+}
+
+export function artistMusicGroupJsonLd(artist: ArtistJsonLdInput): object {
+  const url = siteUrl(`/artists/${artist.slug}`);
+  // Cap stub lists so the JSON-LD blob doesn't balloon for prolific artists.
+  const albumStubs = artist.records.slice(0, 50).map((r) => ({
+    "@type": "MusicAlbum",
+    name: r.title,
+    url: siteUrl(`/vinyl/${r.slug ?? r.id}`),
+    datePublished: r.year ? String(r.year) : undefined,
+    image: r.coverImageUrl,
+  }));
+  const eventStubs = artist.concerts.slice(0, 50).map((c) => ({
+    "@type": "MusicEvent",
+    name: c.eventName ?? `${artist.name} at ${c.venueNameRaw}`,
+    startDate: c.date,
+    url: siteUrl(`/concerts/${c.slug ?? c.id}`),
+    location: {
+      "@type": "Place",
+      name: c.venueNameRaw,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: c.city,
+        addressCountry: c.country,
+      },
+    },
+  }));
+  // Pick a representative image — first record cover, then first concert featured photo.
+  const coverFromRecord = artist.records.find((r) => r.coverImageUrl)?.coverImageUrl;
+  const coverFromConcert = (() => {
+    for (const c of artist.concerts) {
+      const featured = c.photos.find((p) => p.id === c.featuredPhotoId) ?? c.photos[0];
+      if (featured?.blobUrl) return featured.blobUrl;
+    }
+    return undefined;
+  })();
+  const image = coverFromRecord ?? coverFromConcert;
+  return {
+    "@context": "https://schema.org",
+    "@type": "MusicGroup",
+    name: artist.name,
+    url,
+    image,
+    album: albumStubs.length ? albumStubs : undefined,
+    event: eventStubs.length ? eventStubs : undefined,
+    interactionStatistic: [
+      {
+        "@type": "InteractionCounter",
+        interactionType: "https://schema.org/AttendAction",
+        userInteractionCount: artist.concerts.length,
+      },
+      {
+        "@type": "InteractionCounter",
+        interactionType: "https://schema.org/LikeAction",
+        userInteractionCount: artist.records.length,
+      },
+    ],
   };
 }
 

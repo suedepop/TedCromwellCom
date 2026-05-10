@@ -3,10 +3,12 @@ import ConcertCard from "@/components/concerts/ConcertCard";
 import TravelCard from "@/components/travel/TravelCard";
 import type { FeedItem } from "@/lib/feed";
 
-const LABEL: Record<FeedItem["type"], string> = {
+const LABEL: Partial<Record<FeedItem["type"], string>> = {
   blog: "Blog",
   concert: "Concert",
   travel: "Travel",
+  vinyl: "Vinyl",
+  venue: "Venue",
 };
 
 export default function FeedCard({ item }: { item: FeedItem }) {

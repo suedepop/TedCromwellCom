@@ -4,6 +4,7 @@ import ConcertCard from "@/components/concerts/ConcertCard";
 import RecordCard from "@/components/vinyl/RecordCard";
 import { getArtist } from "@/lib/artists";
 import { pageMetadata } from "@/lib/metadata";
+import { artistMusicGroupJsonLd, jsonLdScript } from "@/lib/jsonld";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,10 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
 
   return (
     <article className="space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(artistMusicGroupJsonLd(artist)) }}
+      />
       <header>
         <p className="text-xs uppercase tracking-wider text-muted">Artist</p>
         <h1 className="font-display text-4xl md:text-5xl">{artist.name}</h1>

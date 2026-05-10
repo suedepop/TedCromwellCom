@@ -10,8 +10,15 @@ export const metadata = pageMetadata({
 });
 export const dynamic = "force-dynamic";
 
-export default async function ArtistsIndex() {
-  const artists = await listArtists();
+export default async function ArtistsIndex({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
+  const all = await listArtists();
+  const q = (searchParams.q ?? "").trim().toLowerCase();
+  const artists = q ? all.filter((a) => a.name.toLowerCase().includes(q)) : all;
+
   // Group alphabetically. Use first letter; numerics + symbols → "#".
   const groups = new Map<string, typeof artists>();
   for (const a of artists) {
@@ -25,24 +32,44 @@ export default async function ArtistsIndex() {
 
   return (
     <section className="space-y-8">
-      <header>
-        <h1 className="font-display text-4xl">Artists</h1>
-        <p className="text-muted mt-2">
-          {artists.length} artists across the concert + vinyl collections.
-        </p>
+      <header className="flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="font-display text-4xl">Artists</h1>
+          <p className="text-muted mt-2">
+            {q
+              ? `${artists.length} of ${all.length} artists match "${searchParams.q}".`
+              : `${all.length} artists across the concert + vinyl collections.`}
+          </p>
+        </div>
+        <form className="flex gap-2 text-sm">
+          <input
+            name="q"
+            placeholder="Artist name…"
+            defaultValue={searchParams.q ?? ""}
+            className="bg-surface border border-border rounded px-2 py-1 w-56"
+          />
+          <button className="bg-accent text-bg px-3 rounded">Filter</button>
+          {q && (
+            <Link href="/artists" className="text-xs text-muted hover:text-accent self-center">
+              Clear
+            </Link>
+          )}
+        </form>
       </header>
 
-      <nav aria-label="A–Z" className="flex flex-wrap gap-1 text-xs">
-        {letters.map((l) => (
-          <a
-            key={l}
-            href={`#letter-${l}`}
-            className="border border-border rounded px-2 py-1 hover:border-accent hover:text-accent"
-          >
-            {l}
-          </a>
-        ))}
-      </nav>
+      {letters.length > 1 && (
+        <nav aria-label="A–Z" className="flex flex-wrap gap-1 text-xs">
+          {letters.map((l) => (
+            <a
+              key={l}
+              href={`#letter-${l}`}
+              className="border border-border rounded px-2 py-1 hover:border-accent hover:text-accent"
+            >
+              {l}
+            </a>
+          ))}
+        </nav>
+      )}
 
       <div className="space-y-8">
         {letters.map((l) => (
@@ -64,6 +91,7 @@ export default async function ArtistsIndex() {
             </ul>
           </section>
         ))}
+        {artists.length === 0 && <p className="text-muted text-sm">No artists match.</p>}
       </div>
     </section>
   );

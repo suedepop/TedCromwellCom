@@ -17,7 +17,11 @@ const VenueMap = dynamicImport(() => import("@/components/venues/VenueMap"), {
   loading: () => <div className="h-[400px] bg-surface border border-border rounded" />,
 });
 
-export default async function VenuesPage() {
+export default async function VenuesPage({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
   const [venues, concerts] = await Promise.all([listVenues(), listConcerts()]);
   const counts = new Map<string, number>();
   for (const c of concerts) counts.set(c.venueId, (counts.get(c.venueId) ?? 0) + 1);
@@ -33,15 +37,45 @@ export default async function VenuesPage() {
       href: `/venues/${v.id}`,
     }));
 
-  const sorted = [...venues].sort(
+  const q = (searchParams.q ?? "").trim().toLowerCase();
+  const filtered = q
+    ? venues.filter(
+        (v) =>
+          v.canonicalName.toLowerCase().includes(q) ||
+          v.city?.toLowerCase().includes(q) ||
+          v.aliases?.some((a) => a.toLowerCase().includes(q)),
+      )
+    : venues;
+
+  const sorted = [...filtered].sort(
     (a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0),
   );
 
   return (
     <section className="space-y-8">
-      <header>
-        <h1 className="font-display text-4xl">Venues</h1>
-        <p className="text-muted mt-2">{venues.length} places I've seen music.</p>
+      <header className="flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="font-display text-4xl">Venues</h1>
+          <p className="text-muted mt-2">
+            {q
+              ? `${filtered.length} of ${venues.length} venues match "${searchParams.q}".`
+              : `${venues.length} places I've seen music.`}
+          </p>
+        </div>
+        <form className="flex gap-2 text-sm">
+          <input
+            name="q"
+            placeholder="Filter by name or city…"
+            defaultValue={searchParams.q ?? ""}
+            className="bg-surface border border-border rounded px-2 py-1 w-56"
+          />
+          <button className="bg-accent text-bg px-3 rounded">Filter</button>
+          {q && (
+            <Link href="/venues" className="text-xs text-muted hover:text-accent self-center">
+              Clear
+            </Link>
+          )}
+        </form>
       </header>
       <VenueMap pins={pins} height={420} zoomBoost={4} />
       <ul className="grid sm:grid-cols-2 gap-3">
@@ -56,6 +90,9 @@ export default async function VenuesPage() {
             <div className="text-xs text-muted mt-1">{counts.get(v.id) ?? 0} shows</div>
           </li>
         ))}
+        {sorted.length === 0 && (
+          <li className="col-span-full text-muted text-sm">No venues match.</li>
+        )}
       </ul>
     </section>
   );

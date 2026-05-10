@@ -1,6 +1,4 @@
-"use client";
 import Link from "next/link";
-import { useState } from "react";
 
 export interface Chip {
   href: string;
@@ -14,6 +12,8 @@ interface Props {
   totalLabel: string;
   chips: Chip[];
   initiallyVisible?: number;
+  /** When provided, the "Show all" link navigates here instead of expanding inline. */
+  showAllHref?: string;
 }
 
 export default function Chips({
@@ -22,9 +22,9 @@ export default function Chips({
   totalLabel,
   chips,
   initiallyVisible = 20,
+  showAllHref,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? chips : chips.slice(0, initiallyVisible);
+  const visible = chips.slice(0, initiallyVisible);
   const hasMore = chips.length > initiallyVisible;
 
   if (chips.length === 0) return null;
@@ -50,14 +50,13 @@ export default function Chips({
           </li>
         ))}
       </ul>
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          className="text-xs text-accent hover:underline mt-3"
+      {hasMore && showAllHref && (
+        <Link
+          href={showAllHref}
+          className="inline-block text-xs text-accent hover:underline mt-3"
         >
-          {expanded ? "Show fewer" : `Show all ${chips.length} →`}
-        </button>
+          Show all {chips.length} →
+        </Link>
       )}
     </aside>
   );

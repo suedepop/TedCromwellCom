@@ -137,6 +137,7 @@ export default async function ConcertsPage({
             totalLabel="places"
             chips={venueChips}
             initiallyVisible={20}
+            showAllHref="/venues"
           />
           <Chips
             title="Artists"
@@ -144,6 +145,7 @@ export default async function ConcertsPage({
             totalLabel={artistChips.length === 1 ? "artist" : "artists"}
             chips={artistChips}
             initiallyVisible={20}
+            showAllHref="/artists"
           />
         </div>
       </div>

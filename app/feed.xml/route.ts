@@ -2,6 +2,9 @@ import { listFeedAll } from "@/lib/feed";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/metadata";
 
 export const runtime = "nodejs";
+// Render at request time — at build time the Cosmos env vars aren't available,
+// so all items would silently fall back to empty arrays.
+export const dynamic = "force-dynamic";
 export const revalidate = 600;
 
 function escape(input: string): string {

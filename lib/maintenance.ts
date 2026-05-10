@@ -232,5 +232,185 @@ export async function verifyConnections(): Promise<VerifyConnectionsResult> {
   return { ok, cosmos, blob, storage, database };
 }
 
+// ─── lookupMusicBrainzIds ───────────────────────────────────────────────────
+
+interface MbArtist {
+  id: string;
+  name: string;
+  score: number;
+  type?: string;
+  country?: string;
+  disambiguation?: string;
+  aliases?: { name: string }[];
+}
+
+export interface MbLookupCandidate {
+  mbid: string;
+  name: string;
+  score: number;
+  type?: string;
+  country?: string;
+  disambiguation?: string;
+}
+
+export interface MbAmbiguousArtist {
+  slug: string;
+  name: string;
+  reason: string;
+  candidates: MbLookupCandidate[];
+}
+
+export interface LookupMusicBrainzResult {
+  processed: number;
+  matched: number;
+  ambiguous: number;
+  notFound: number;
+  errors: number;
+  remaining: number;
+  ambiguousList: MbAmbiguousArtist[];
+}
+
+const MB_BASE = "https://musicbrainz.org/ws/2/artist/";
+const MB_RATE_DELAY_MS = 1100; // ~0.9 req/s, well under MB's 1/s anonymous limit
+const MB_USER_AGENT =
+  "TedCromwellCom/1.0 (+https://www.tedcromwell.com — personal-site artist alignment)";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function normalizeForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+async function searchMusicBrainz(name: string): Promise<MbArtist[]> {
+  const q = `artist:"${name.replace(/"/g, "")}"`;
+  const url = `${MB_BASE}?query=${encodeURIComponent(q)}&fmt=json&limit=5`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(url, {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { artists?: MbArtist[] };
+      return data.artists ?? [];
+    }
+    if (res.status === 503 || res.status === 429) {
+      // Honor MB's rate limit — back off and retry
+      await sleep(2000 * (attempt + 1));
+      continue;
+    }
+    throw new Error(`musicbrainz ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  throw new Error("musicbrainz: too many retries");
+}
+
+function classifyMatch(
+  artistName: string,
+  candidates: MbArtist[],
+):
+  | { kind: "match"; mbid: string }
+  | { kind: "ambiguous"; reason: string; candidates: MbLookupCandidate[] }
+  | { kind: "not-found" } {
+  if (candidates.length === 0) return { kind: "not-found" };
+  const target = normalizeForMatch(artistName);
+  const scored = candidates.map((c) => {
+    const nameMatches = normalizeForMatch(c.name) === target;
+    const aliasMatches =
+      c.aliases?.some((a) => normalizeForMatch(a.name) === target) ?? false;
+    return { ...c, nameMatches, aliasMatches };
+  });
+  const top = scored[0];
+  const second = scored[1];
+  // Confident match: top has high score AND name/alias matches AND second is meaningfully behind.
+  if (
+    (top.nameMatches || top.aliasMatches) &&
+    top.score >= 95 &&
+    (!second || second.score <= top.score - 5 || !(second.nameMatches || second.aliasMatches))
+  ) {
+    return { kind: "match", mbid: top.id };
+  }
+  const candidatesOut: MbLookupCandidate[] = scored.slice(0, 5).map((c) => ({
+    mbid: c.id,
+    name: c.name,
+    score: c.score,
+    type: c.type,
+    country: c.country,
+    disambiguation: c.disambiguation,
+  }));
+  if (top.score < 80) {
+    return { kind: "not-found" };
+  }
+  return {
+    kind: "ambiguous",
+    reason:
+      top.nameMatches || top.aliasMatches
+        ? "Multiple close-scoring candidates"
+        : "Top result name doesn't match exactly",
+    candidates: candidatesOut,
+  };
+}
+
+export async function lookupMusicBrainzIds(opts: {
+  limit?: number;
+  dryRun?: boolean;
+} = {}): Promise<LookupMusicBrainzResult> {
+  const { limit = 200, dryRun = false } = opts;
+  const stored = await listStoredArtists();
+  const todo = stored.filter((a) => !a.musicbrainzId);
+  const slice = todo.slice(0, limit);
+
+  let matched = 0;
+  let ambiguous = 0;
+  let notFound = 0;
+  let errors = 0;
+  const ambiguousList: MbAmbiguousArtist[] = [];
+  const now = new Date().toISOString();
+
+  for (let i = 0; i < slice.length; i++) {
+    const artist = slice[i];
+    if (i > 0) await sleep(MB_RATE_DELAY_MS);
+    try {
+      const candidates = await searchMusicBrainz(artist.name);
+      const result = classifyMatch(artist.name, candidates);
+      if (result.kind === "match") {
+        matched += 1;
+        if (!dryRun) {
+          const updated: Artist = {
+            ...artist,
+            musicbrainzId: result.mbid,
+            setlistFmMbid: artist.setlistFmMbid ?? result.mbid,
+            updatedAt: now,
+          };
+          await containers.artists.item(artist.slug, artist.slug).replace(updated);
+        }
+      } else if (result.kind === "ambiguous") {
+        ambiguous += 1;
+        ambiguousList.push({
+          slug: artist.slug,
+          name: artist.name,
+          reason: result.reason,
+          candidates: result.candidates,
+        });
+      } else {
+        notFound += 1;
+      }
+    } catch {
+      errors += 1;
+    }
+  }
+
+  return {
+    processed: slice.length,
+    matched,
+    ambiguous,
+    notFound,
+    errors,
+    remaining: Math.max(0, todo.length - slice.length),
+    ambiguousList: ambiguousList.slice(0, 30),
+  };
+}
+
 // Re-export the TravelEntry type so the script-side wrapper can stay narrow.
 export type { TravelEntry };

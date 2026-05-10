@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 
 interface BootstrapResult {
@@ -31,11 +32,47 @@ interface VerifyResult {
   error?: string;
 }
 
+interface MbCandidate {
+  mbid: string;
+  name: string;
+  score: number;
+  type?: string;
+  country?: string;
+  disambiguation?: string;
+}
+
+interface MbResult {
+  ok: boolean;
+  processed: number;
+  matched: number;
+  ambiguous: number;
+  notFound: number;
+  errors: number;
+  remaining: number;
+  ambiguousList: { slug: string; name: string; reason: string; candidates: MbCandidate[] }[];
+  error?: string;
+  dryRun?: boolean;
+}
+
 export default function MaintenancePanel() {
   const [bootstrap, setBootstrap] = useState<BootstrapResult | null>(null);
   const [slugs, setSlugs] = useState<SlugsResult | null>(null);
   const [verify, setVerify] = useState<VerifyResult | null>(null);
+  const [mb, setMb] = useState<MbResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+
+  async function runMb(opts: { dryRun?: boolean }) {
+    setBusy("mb");
+    setMb(null);
+    const res = await fetch("/api/maintenance/lookup-musicbrainz", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(opts),
+    });
+    const data = await res.json();
+    setBusy(null);
+    setMb(res.ok ? { ...data, dryRun: opts.dryRun } : { ok: false, ...data });
+  }
 
   async function runBootstrap(opts: { refillDiscogs?: boolean; dryRun?: boolean }) {
     setBusy("bootstrap");
@@ -133,6 +170,98 @@ export default function MaintenancePanel() {
                     <ul className="list-disc ml-5 mt-1">
                       {bootstrap.newArtistNames.map((n) => (
                         <li key={n}>{n}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </>
+            )}
+          </ResultBlock>
+        )}
+      </Card>
+
+      <Card
+        title="Look up MusicBrainz IDs"
+        description="Calls the MusicBrainz API at ~1 req/sec for every Artist doc that's missing an MBID. High-confidence matches auto-fill both musicbrainzId and setlistFmMbid. Ambiguous matches are listed for manual review. Processes up to 200 artists per run; click again to continue."
+      >
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => runMb({ dryRun: true })}
+            disabled={!!busy}
+            className="border border-border px-3 py-1.5 rounded text-sm disabled:opacity-50"
+          >
+            Dry-run (no writes)
+          </button>
+          <button
+            onClick={() => runMb({})}
+            disabled={!!busy}
+            className="bg-accent text-bg px-3 py-1.5 rounded text-sm disabled:opacity-50"
+          >
+            Run lookup
+          </button>
+          {busy === "mb" && <Spinner />}
+        </div>
+        {busy === "mb" && (
+          <p className="text-xs text-muted">
+            Throttled at ~1 req/sec. 200 artists ≈ 4 minutes — be patient, the request stays open.
+          </p>
+        )}
+        {mb && (
+          <ResultBlock>
+            {mb.error ? (
+              <p className="text-red-400">{mb.error}</p>
+            ) : (
+              <>
+                <p>
+                  <strong>{mb.matched}</strong> matched ·{" "}
+                  <strong>{mb.ambiguous}</strong> ambiguous ·{" "}
+                  <strong>{mb.notFound}</strong> not found ·{" "}
+                  <strong>{mb.errors}</strong> errors · processed {mb.processed} of{" "}
+                  {mb.processed + mb.remaining}
+                </p>
+                <p className="text-muted text-xs">
+                  {mb.dryRun ? "Dry-run only — nothing written." : "Saved to Cosmos."}
+                  {mb.remaining > 0 && ` · ${mb.remaining} artists still need lookup; click "Run lookup" again.`}
+                </p>
+                {mb.ambiguousList.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted">
+                      Show {mb.ambiguousList.length} ambiguous artists (manual review)
+                    </summary>
+                    <ul className="space-y-3 mt-2">
+                      {mb.ambiguousList.map((a) => (
+                        <li key={a.slug} className="border border-border rounded p-2 bg-bg">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <Link
+                              href={`/admin/artists/${a.slug}`}
+                              className="font-medium hover:text-accent"
+                            >
+                              {a.name}
+                            </Link>
+                            <span className="text-muted">{a.reason}</span>
+                          </div>
+                          <ul className="mt-1 space-y-0.5">
+                            {a.candidates.map((c) => (
+                              <li key={c.mbid}>
+                                <a
+                                  href={`https://musicbrainz.org/artist/${c.mbid}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-accent hover:underline"
+                                >
+                                  {c.name}
+                                </a>
+                                <span className="text-muted">
+                                  {" "}
+                                  · {c.score}
+                                  {c.type ? ` · ${c.type}` : ""}
+                                  {c.country ? ` · ${c.country}` : ""}
+                                  {c.disambiguation ? ` — ${c.disambiguation}` : ""}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
                       ))}
                     </ul>
                   </details>

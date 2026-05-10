@@ -268,6 +268,7 @@ export interface LookupMusicBrainzResult {
   errors: number;
   remaining: number;
   ambiguousList: MbAmbiguousArtist[];
+  errorMessages: string[];
 }
 
 const MB_BASE = "https://musicbrainz.org/ws/2/artist/";
@@ -366,6 +367,7 @@ export async function lookupMusicBrainzIds(opts: {
   let notFound = 0;
   let errors = 0;
   const ambiguousList: MbAmbiguousArtist[] = [];
+  const errorMessages: string[] = [];
   const now = new Date().toISOString();
 
   for (let i = 0; i < slice.length; i++) {
@@ -396,8 +398,13 @@ export async function lookupMusicBrainzIds(opts: {
       } else {
         notFound += 1;
       }
-    } catch {
+    } catch (e) {
       errors += 1;
+      const msg = e instanceof Error ? e.message : String(e);
+      // Keep just the first ~10 unique-ish messages so the response stays small
+      if (errorMessages.length < 10) {
+        errorMessages.push(`${artist.name}: ${msg.slice(0, 200)}`);
+      }
     }
   }
 
@@ -409,6 +416,7 @@ export async function lookupMusicBrainzIds(opts: {
     errors,
     remaining: Math.max(0, todo.length - slice.length),
     ambiguousList: ambiguousList.slice(0, 30),
+    errorMessages,
   };
 }
 

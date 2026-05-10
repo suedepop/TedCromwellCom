@@ -50,6 +50,7 @@ interface MbResult {
   errors: number;
   remaining: number;
   ambiguousList: { slug: string; name: string; reason: string; candidates: MbCandidate[] }[];
+  errorMessages?: string[];
   error?: string;
   dryRun?: boolean;
 }
@@ -223,6 +224,18 @@ export default function MaintenancePanel() {
                   {mb.dryRun ? "Dry-run only — nothing written." : "Saved to Cosmos."}
                   {mb.remaining > 0 && ` · ${mb.remaining} artists still need lookup; click "Run lookup" again.`}
                 </p>
+                {mb.errorMessages && mb.errorMessages.length > 0 && (
+                  <details className="text-xs" open>
+                    <summary className="cursor-pointer text-red-400">
+                      Show first {mb.errorMessages.length} error message{mb.errorMessages.length === 1 ? "" : "s"}
+                    </summary>
+                    <ul className="mt-1 space-y-0.5 font-mono">
+                      {mb.errorMessages.map((m, i) => (
+                        <li key={i} className="text-red-400 break-all">{m}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
                 {mb.ambiguousList.length > 0 && (
                   <details className="text-xs">
                     <summary className="cursor-pointer text-muted">

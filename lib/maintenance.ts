@@ -10,6 +10,7 @@ import { listRecords } from "./records";
 import { listTravelEntries } from "./travel";
 import { listStoredArtists, buildArtistSlug } from "./artists";
 import { uniqueConcertSlug, uniqueTravelSlug } from "./slugBuilders";
+import { searchArtists as searchMusicBrainz, type MbArtist } from "./musicbrainz";
 import type { Artist, Concert, TravelEntry } from "./types";
 
 // ─── bootstrapArtists ────────────────────────────────────────────────────────
@@ -234,16 +235,6 @@ export async function verifyConnections(): Promise<VerifyConnectionsResult> {
 
 // ─── lookupMusicBrainzIds ───────────────────────────────────────────────────
 
-interface MbArtist {
-  id: string;
-  name: string;
-  score: number;
-  type?: string;
-  country?: string;
-  disambiguation?: string;
-  aliases?: { name: string }[];
-}
-
 export interface MbLookupCandidate {
   mbid: string;
   name: string;
@@ -271,10 +262,7 @@ export interface LookupMusicBrainzResult {
   errorMessages: string[];
 }
 
-const MB_BASE = "https://musicbrainz.org/ws/2/artist/";
 const MB_RATE_DELAY_MS = 1100; // ~0.9 req/s, well under MB's 1/s anonymous limit
-const MB_USER_AGENT =
-  "TedCromwellCom/1.0 (+https://www.tedcromwell.com - personal-site artist alignment)";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -284,27 +272,6 @@ function normalizeForMatch(s: string): string {
     .replace(/&/g, "and")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
-}
-
-async function searchMusicBrainz(name: string): Promise<MbArtist[]> {
-  const q = `artist:"${name.replace(/"/g, "")}"`;
-  const url = `${MB_BASE}?query=${encodeURIComponent(q)}&fmt=json&limit=5`;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(url, {
-      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { artists?: MbArtist[] };
-      return data.artists ?? [];
-    }
-    if (res.status === 503 || res.status === 429) {
-      // Honor MB's rate limit — back off and retry
-      await sleep(2000 * (attempt + 1));
-      continue;
-    }
-    throw new Error(`musicbrainz ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  }
-  throw new Error("musicbrainz: too many retries");
 }
 
 function classifyMatch(
@@ -374,7 +341,7 @@ export async function lookupMusicBrainzIds(opts: {
     const artist = slice[i];
     if (i > 0) await sleep(MB_RATE_DELAY_MS);
     try {
-      const candidates = await searchMusicBrainz(artist.name);
+      const candidates = await searchMusicBrainz(artist.name, 5);
       const result = classifyMatch(artist.name, candidates);
       if (result.kind === "match") {
         matched += 1;

@@ -3,9 +3,25 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import type { ArtistAggregate } from "@/lib/artists";
+import ArtistSearchModal, { type ModalCandidate } from "@/components/admin/ArtistSearchModal";
 
 interface Props {
   artist: ArtistAggregate;
+}
+
+interface MbHit {
+  id: string;
+  name: string;
+  score?: number;
+  type?: string;
+  country?: string;
+  disambiguation?: string;
+}
+
+interface DiscogsHit {
+  id: number;
+  title: string;
+  thumb?: string;
 }
 
 export default function ArtistEditor({ artist }: Props) {
@@ -23,6 +39,8 @@ export default function ArtistEditor({ artist }: Props) {
   const [notes, setNotes] = useState(s?.notes ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mbModalOpen, setMbModalOpen] = useState(false);
+  const [discogsModalOpen, setDiscogsModalOpen] = useState(false);
 
   async function save() {
     setBusy(true);
@@ -68,9 +86,7 @@ export default function ArtistEditor({ artist }: Props) {
   }
 
   // Useful lookup links — open the right search/result in a new tab.
-  const mbSearchUrl = `https://musicbrainz.org/search?type=artist&query=${encodeURIComponent(artist.name)}`;
   const setlistSearchUrl = `https://www.setlist.fm/search?query=${encodeURIComponent(artist.name)}`;
-  const discogsSearchUrl = `https://www.discogs.com/search/?type=artist&q=${encodeURIComponent(artist.name)}`;
   const mbResolvedUrl = musicbrainzId
     ? `https://musicbrainz.org/artist/${musicbrainzId}`
     : null;
@@ -149,9 +165,9 @@ export default function ArtistEditor({ artist }: Props) {
           label="MusicBrainz ID (MBID, UUID format)"
           value={musicbrainzId}
           onChange={setMusicbrainzId}
-          searchUrl={mbSearchUrl}
+          onSearch={() => setMbModalOpen(true)}
           resolvedUrl={mbResolvedUrl}
-          searchLabel="Search MusicBrainz ↗"
+          searchLabel="Search MusicBrainz"
           resolvedLabel="View on MusicBrainz ↗"
           placeholder="a74b1b7f-71a5-4011-9441-d0b5e4122711"
         />
@@ -171,14 +187,62 @@ export default function ArtistEditor({ artist }: Props) {
           label="Discogs artist ID (numeric)"
           value={discogsArtistId}
           onChange={setDiscogsArtistId}
-          searchUrl={discogsSearchUrl}
+          onSearch={() => setDiscogsModalOpen(true)}
           resolvedUrl={discogsResolvedUrl}
-          searchLabel="Search Discogs ↗"
+          searchLabel="Search Discogs"
           resolvedLabel="View on Discogs ↗"
           placeholder="12345"
           inputMode="numeric"
         />
       </fieldset>
+
+      <ArtistSearchModal
+        open={mbModalOpen}
+        onClose={() => setMbModalOpen(false)}
+        title={`Search MusicBrainz — ${artist.name}`}
+        initialQuery={artist.name}
+        searchUrl="/api/musicbrainz/search"
+        mapResult={(raw) => {
+          const a = raw as MbHit;
+          const meta = [
+            typeof a.score === "number" ? `score ${a.score}` : "",
+            a.type ?? "",
+            a.country ?? "",
+            a.disambiguation ? `— ${a.disambiguation}` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return {
+            id: a.id,
+            name: a.name,
+            meta,
+            externalUrl: `https://musicbrainz.org/artist/${a.id}`,
+          } satisfies ModalCandidate;
+        }}
+        onPick={(c) => {
+          setMusicbrainzId(c.id);
+          // setlist.fm uses the same MBID — populate it too if empty.
+          if (!setlistFmMbid.trim()) setSetlistFmMbid(c.id);
+        }}
+      />
+
+      <ArtistSearchModal
+        open={discogsModalOpen}
+        onClose={() => setDiscogsModalOpen(false)}
+        title={`Search Discogs — ${artist.name}`}
+        initialQuery={artist.name}
+        searchUrl="/api/discogs/search"
+        mapResult={(raw) => {
+          const a = raw as DiscogsHit;
+          return {
+            id: String(a.id),
+            name: a.title,
+            thumb: a.thumb,
+            externalUrl: `https://www.discogs.com/artist/${a.id}`,
+          } satisfies ModalCandidate;
+        }}
+        onPick={(c) => setDiscogsArtistId(c.id)}
+      />
 
       <Field label="Image URL (optional — artist portrait)">
         <input
@@ -223,7 +287,9 @@ interface IdFieldProps {
   label: string;
   value: string;
   onChange: (v: string) => void;
-  searchUrl: string;
+  /** Either pass a searchUrl (opens external search in new tab) or onSearch (opens local modal). */
+  searchUrl?: string;
+  onSearch?: () => void;
   resolvedUrl: string | null;
   searchLabel: string;
   resolvedLabel: string;
@@ -236,6 +302,7 @@ function IdField({
   value,
   onChange,
   searchUrl,
+  onSearch,
   resolvedUrl,
   searchLabel,
   resolvedLabel,
@@ -255,9 +322,19 @@ function IdField({
         />
       </label>
       <div className="flex gap-3 text-xs">
-        <a href={searchUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-          {searchLabel}
-        </a>
+        {onSearch ? (
+          <button
+            type="button"
+            onClick={onSearch}
+            className="text-accent hover:underline"
+          >
+            {searchLabel}
+          </button>
+        ) : searchUrl ? (
+          <a href={searchUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
+            {searchLabel} ↗
+          </a>
+        ) : null}
         {resolvedUrl && (
           <a
             href={resolvedUrl}

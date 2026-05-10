@@ -55,6 +55,32 @@ function authHeader(): string {
   return `Discogs key=${k}, secret=${s}`;
 }
 
+export interface DiscogsArtistSearchHit {
+  id: number;
+  title: string; // display name (Discogs returns the full disambiguated form here)
+  thumb?: string;
+  uri?: string; // path on discogs.com, e.g. "/artist/12345-Pixies"
+}
+
+export async function searchArtistsOnDiscogs(
+  q: string,
+  limit = 10,
+): Promise<DiscogsArtistSearchHit[]> {
+  const url = `${BASE}/database/search?type=artist&q=${encodeURIComponent(q)}&per_page=${limit}`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "TedCromwellCom/1.0 (+https://www.tedcromwell.com)",
+      Authorization: authHeader(),
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`discogs ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  const data = (await res.json()) as { results?: DiscogsArtistSearchHit[] };
+  return data.results ?? [];
+}
+
 async function fetchPage(username: string, page: number): Promise<DiscogsCollectionResponse> {
   const url = `${BASE}/users/${encodeURIComponent(username)}/collection/folders/0/releases?per_page=${PER_PAGE}&page=${page}&sort=added&sort_order=desc`;
   for (let attempt = 0; attempt < 5; attempt++) {

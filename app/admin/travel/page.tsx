@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ExportButton from "./ExportButton";
 import { listTravelEntries } from "@/lib/travel";
+import FacebookPostedIcon from "@/components/admin/FacebookPostedIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default async function AdminTravelList() {
             <th className="py-2">Location</th>
             <th className="py-2">Where</th>
             <th className="py-2 w-40">Dates</th>
+            <th className="py-2 w-8"></th>
           </tr>
         </thead>
         <tbody>
@@ -40,11 +42,17 @@ export default async function AdminTravelList() {
                 {e.startDate}
                 {e.endDate && e.endDate !== e.startDate ? ` → ${e.endDate}` : ""}
               </td>
+              <td className="py-2 text-right">
+                <FacebookPostedIcon
+                  lastPostedAt={e.lastPostedToFacebookAt}
+                  lastPostedUrl={e.lastPostedToFacebookUrl}
+                />
+              </td>
             </tr>
           ))}
           {entries.length === 0 && (
             <tr>
-              <td colSpan={3} className="py-6 text-muted text-center">
+              <td colSpan={4} className="py-6 text-muted text-center">
                 No travel entries yet.
               </td>
             </tr>

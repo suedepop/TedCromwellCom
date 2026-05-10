@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listPosts } from "@/lib/blog";
+import FacebookPostedIcon from "@/components/admin/FacebookPostedIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function AdminBlogList() {
             <th className="py-2">Title</th>
             <th className="py-2 w-24">Status</th>
             <th className="py-2 w-32">Updated</th>
+            <th className="py-2 w-8"></th>
           </tr>
         </thead>
         <tbody>
@@ -33,11 +35,17 @@ export default async function AdminBlogList() {
                 <span className={p.status === "published" ? "text-accent" : "text-muted"}>{p.status}</span>
               </td>
               <td className="py-2 text-muted">{new Date(p.updatedAt).toLocaleDateString()}</td>
+              <td className="py-2 text-right">
+                <FacebookPostedIcon
+                  lastPostedAt={p.lastPostedToFacebookAt}
+                  lastPostedUrl={p.lastPostedToFacebookUrl}
+                />
+              </td>
             </tr>
           ))}
           {posts.length === 0 && (
             <tr>
-              <td colSpan={3} className="py-6 text-muted text-center">
+              <td colSpan={4} className="py-6 text-muted text-center">
                 No posts yet.
               </td>
             </tr>

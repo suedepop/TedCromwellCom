@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listConcerts } from "@/lib/concerts";
 import { concertBandLine } from "@/lib/concertDisplay";
+import FacebookPostedIcon from "@/components/admin/FacebookPostedIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,7 @@ export default async function AdminConcertsList() {
             <th className="py-2">Artist(s)</th>
             <th className="py-2">Venue</th>
             <th className="py-2 w-24">Media</th>
+            <th className="py-2 w-8"></th>
           </tr>
         </thead>
         <tbody>
@@ -107,12 +109,18 @@ export default async function AdminConcertsList() {
                     )}
                   </div>
                 </td>
+                <td className="py-2 text-right">
+                  <FacebookPostedIcon
+                    lastPostedAt={c.lastPostedToFacebookAt}
+                    lastPostedUrl={c.lastPostedToFacebookUrl}
+                  />
+                </td>
               </tr>
             );
           })}
           {concerts.length === 0 && (
             <tr>
-              <td colSpan={4} className="py-6 text-muted text-center">
+              <td colSpan={5} className="py-6 text-muted text-center">
                 No concerts yet.
               </td>
             </tr>

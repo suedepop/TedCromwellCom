@@ -265,6 +265,8 @@ interface ArtistJsonLdInput {
   slug: string;
   concerts: Concert[];
   records: VinylRecord[];
+  sameAs?: string[];
+  image?: string;
 }
 
 export function artistMusicGroupJsonLd(artist: ArtistJsonLdInput): object {
@@ -292,7 +294,7 @@ export function artistMusicGroupJsonLd(artist: ArtistJsonLdInput): object {
       },
     },
   }));
-  // Pick a representative image — first record cover, then first concert featured photo.
+  // Pick a representative image — explicit override > first record cover > first concert featured photo.
   const coverFromRecord = artist.records.find((r) => r.coverImageUrl)?.coverImageUrl;
   const coverFromConcert = (() => {
     for (const c of artist.concerts) {
@@ -301,13 +303,14 @@ export function artistMusicGroupJsonLd(artist: ArtistJsonLdInput): object {
     }
     return undefined;
   })();
-  const image = coverFromRecord ?? coverFromConcert;
+  const image = artist.image ?? coverFromRecord ?? coverFromConcert;
   return {
     "@context": "https://schema.org",
     "@type": "MusicGroup",
     name: artist.name,
     url,
     image,
+    sameAs: artist.sameAs && artist.sameAs.length ? artist.sameAs : undefined,
     album: albumStubs.length ? albumStubs : undefined,
     event: eventStubs.length ? eventStubs : undefined,
     interactionStatistic: [

@@ -5,6 +5,7 @@ const cards = [
   { title: "Concerts", href: "/admin/concerts", action: "Run Import", actionHref: "/admin/concerts/import" },
   { title: "Travel", href: "/admin/travel", action: "Add Trip", actionHref: "/admin/travel/new" },
   { title: "Vinyl", href: "/admin/records", action: "Import Discogs", actionHref: "/admin/records/import" },
+  { title: "Artists", href: "/admin/artists", action: "Manage IDs", actionHref: "/admin/artists" },
   { title: "Resume", href: "/admin/resume", action: "Edit Resume", actionHref: "/admin/resume" },
 ];
 

@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ConcertCard from "@/components/concerts/ConcertCard";
 import RecordCard from "@/components/vinyl/RecordCard";
-import { getArtist } from "@/lib/artists";
+import PostBody from "@/components/blog/PostBody";
+import {
+  getArtist,
+  musicbrainzUrl,
+  setlistFmArtistUrl,
+  discogsArtistUrl,
+} from "@/lib/artists";
 import { pageMetadata } from "@/lib/metadata";
 import { artistMusicGroupJsonLd, jsonLdScript } from "@/lib/jsonld";
 
@@ -22,6 +28,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       ? `${artist.name} — ${parts.join(" · ")} from my collection.`
       : artist.name,
     path: `/artists/${artist.slug}`,
+    imageUrl: artist.stored?.imageUrl,
     type: "profile",
   });
 }
@@ -30,20 +37,60 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
   const artist = await getArtist(params.slug);
   if (!artist) notFound();
 
+  const s = artist.stored;
+  const links: { href: string; label: string }[] = [];
+  const mb = musicbrainzUrl(s?.musicbrainzId);
+  if (mb) links.push({ href: mb, label: "MusicBrainz" });
+  const setlist = setlistFmArtistUrl(s?.setlistFmMbid, artist.name);
+  if (setlist && s?.setlistFmMbid) links.push({ href: setlist, label: "setlist.fm" });
+  const discogs = discogsArtistUrl(s?.discogsArtistId);
+  if (discogs) links.push({ href: discogs, label: "Discogs" });
+
   return (
     <article className="space-y-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(artistMusicGroupJsonLd(artist)) }}
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(
+            artistMusicGroupJsonLd({
+              name: artist.name,
+              slug: artist.slug,
+              concerts: artist.concerts,
+              records: artist.records,
+              sameAs: [mb, setlist && s?.setlistFmMbid ? setlist : null, discogs].filter(
+                (u): u is string => !!u,
+              ),
+              image: artist.stored?.imageUrl,
+            }),
+          ),
+        }}
       />
-      <header>
+      <header className="space-y-2">
         <p className="text-xs uppercase tracking-wider text-muted">Artist</p>
         <h1 className="font-display text-4xl md:text-5xl">{artist.name}</h1>
-        <p className="text-sm text-muted mt-2">
+        <p className="text-sm text-muted">
           {artist.concerts.length} {artist.concerts.length === 1 ? "concert" : "concerts"} ·{" "}
           {artist.records.length} {artist.records.length === 1 ? "record" : "records"}
         </p>
+        {links.length > 0 && (
+          <ul className="flex flex-wrap gap-3 text-xs pt-1">
+            {links.map((l) => (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="border border-border rounded px-2 py-1 hover:border-accent hover:text-accent transition"
+                >
+                  {l.label} ↗
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
       </header>
+
+      {s?.description && <PostBody content={s.description} />}
 
       {artist.concerts.length > 0 && (
         <section className="space-y-3">

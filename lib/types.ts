@@ -186,6 +186,21 @@ export interface VinylRecord {
   updatedAt: string;
 }
 
+export interface Artist {
+  id: string;                       // === slug (also the Cosmos partition key value)
+  slug: string;
+  name: string;                     // canonical display name
+  aliases?: string[];               // alternate spellings that should resolve to this artist
+  musicbrainzId?: string;           // MBID (UUID), e.g. "a74b1b7f-71a5-4011-9441-d0b5e4122711"
+  setlistFmMbid?: string;           // setlist.fm uses MBIDs; usually equals musicbrainzId, kept separate in case they ever diverge
+  discogsArtistId?: number;         // numeric Discogs artist id, e.g. 12345
+  description?: string;             // public markdown bio / write-up
+  imageUrl?: string;                // optional artist portrait URL (Blob, Wikipedia, etc.)
+  notes?: string;                   // private admin notes
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SearchIndexEntry {
   id: string;
   type: "post" | "concert" | "trip";

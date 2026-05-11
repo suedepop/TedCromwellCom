@@ -41,6 +41,25 @@ export default function ArtistEditor({ artist }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [mbModalOpen, setMbModalOpen] = useState(false);
   const [discogsModalOpen, setDiscogsModalOpen] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function uploadImageFile(file: File) {
+    setUploadingImage(true);
+    setUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload/artist-image", { method: "POST", body: fd });
+      const data = (await res.json()) as { blobUrl?: string; error?: string };
+      if (!res.ok || !data.blobUrl) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setImageUrl(data.blobUrl);
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   async function save() {
     setBusy(true);
@@ -244,14 +263,50 @@ export default function ArtistEditor({ artist }: Props) {
         onPick={(c) => setDiscogsArtistId(c.id)}
       />
 
-      <Field label="Image URL (optional — artist portrait)">
-        <input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://…"
-          className="w-full bg-surface border border-border rounded px-3 py-2 text-sm"
-        />
-      </Field>
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-wider text-muted">
+          Artist portrait (resized to 300×300, smart-cropped)
+        </p>
+        <div className="flex items-start gap-4">
+          <div className="w-24 h-24 rounded border border-border overflow-hidden bg-surface flex items-center justify-center shrink-0">
+            {imageUrl ? (
+              <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs text-muted">no image</span>
+            )}
+          </div>
+          <div className="flex-1 space-y-2">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void uploadImageFile(f);
+                e.target.value = "";
+              }}
+              disabled={uploadingImage}
+              className="text-xs text-muted file:mr-2 file:bg-accent file:text-bg file:border-0 file:rounded file:px-3 file:py-1.5 file:text-sm file:cursor-pointer disabled:opacity-50"
+            />
+            {uploadingImage && <p className="text-xs text-muted">Uploading…</p>}
+            {uploadError && <p className="text-xs text-red-400">Upload failed: {uploadError}</p>}
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="…or paste an image URL"
+              className="w-full bg-surface border border-border rounded px-3 py-2 text-xs font-mono"
+            />
+            {imageUrl && (
+              <button
+                type="button"
+                onClick={() => setImageUrl("")}
+                className="text-xs text-red-400 hover:underline"
+              >
+                Clear image
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <Field label="Description (markdown — public bio / write-up)">
         <textarea

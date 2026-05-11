@@ -19,7 +19,7 @@ export const blobService = new Proxy({} as BlobServiceClient, {
   },
 });
 
-export type BlobContainer = "photos" | "stubs" | "blog" | "travel" | "resume";
+export type BlobContainer = "photos" | "stubs" | "blog" | "travel" | "resume" | "artists";
 
 export function container(name: BlobContainer): ContainerClient {
   return getService().getContainerClient(name);

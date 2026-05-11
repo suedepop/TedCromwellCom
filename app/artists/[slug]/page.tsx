@@ -65,29 +65,38 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
           ),
         }}
       />
-      <header className="space-y-2">
-        <p className="text-xs uppercase tracking-wider text-muted">Artist</p>
-        <h1 className="font-display text-4xl md:text-5xl">{artist.name}</h1>
-        <p className="text-sm text-muted">
-          {artist.concerts.length} {artist.concerts.length === 1 ? "concert" : "concerts"} ·{" "}
-          {artist.records.length} {artist.records.length === 1 ? "record" : "records"}
-        </p>
-        {links.length > 0 && (
-          <ul className="flex flex-wrap gap-3 text-xs pt-1">
-            {links.map((l) => (
-              <li key={l.href}>
-                <a
-                  href={l.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="border border-border rounded px-2 py-1 hover:border-accent hover:text-accent transition"
-                >
-                  {l.label} ↗
-                </a>
-              </li>
-            ))}
-          </ul>
+      <header className="flex items-start gap-5 flex-wrap">
+        {s?.imageUrl && (
+          <img
+            src={s.imageUrl}
+            alt={artist.name}
+            className="w-32 h-32 md:w-40 md:h-40 rounded object-cover border border-border shrink-0"
+          />
         )}
+        <div className="space-y-2 flex-1 min-w-0">
+          <p className="text-xs uppercase tracking-wider text-muted">Artist</p>
+          <h1 className="font-display text-4xl md:text-5xl">{artist.name}</h1>
+          <p className="text-sm text-muted">
+            {artist.concerts.length} {artist.concerts.length === 1 ? "concert" : "concerts"} ·{" "}
+            {artist.records.length} {artist.records.length === 1 ? "record" : "records"}
+          </p>
+          {links.length > 0 && (
+            <ul className="flex flex-wrap gap-3 text-xs pt-1">
+              {links.map((l) => (
+                <li key={l.href}>
+                  <a
+                    href={l.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="border border-border rounded px-2 py-1 hover:border-accent hover:text-accent transition"
+                  >
+                    {l.label} ↗
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </header>
 
       {s?.description && <PostBody content={s.description} />}

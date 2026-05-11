@@ -56,3 +56,27 @@ export async function processAndUploadImage(
 export function isImageMime(mime: string): boolean {
   return /^image\/(jpeg|jpg|png|webp|gif|heic|heif)$/i.test(mime);
 }
+
+/**
+ * Artist portraits are stored at a fixed 300x300 (smart cover crop) — no
+ * separate thumbnail since the image is already small. Uses sharp's "attention"
+ * heuristic to keep the focal subject (typically a face) centered.
+ */
+export async function processAndUploadArtistImage(
+  input: Buffer,
+): Promise<{ blobUrl: string; contentType: string }> {
+  const id = randomUUID();
+  const decoded = await decodeToJpeg(input);
+  const main = await sharp(decoded)
+    .rotate()
+    .resize({ width: 300, height: 300, fit: "cover", position: "attention" })
+    .jpeg({ quality: 85, progressive: true })
+    .toBuffer();
+  const { blobUrl } = await uploadBufferWithName(
+    "artists",
+    main,
+    "image/jpeg",
+    `${id}.jpg`,
+  );
+  return { blobUrl, contentType: "image/jpeg" };
+}

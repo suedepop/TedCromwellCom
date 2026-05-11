@@ -200,7 +200,7 @@ export async function verifyConnections(): Promise<VerifyConnectionsResult> {
     }
   }
 
-  const blobNames = ["photos", "stubs", "blog", "travel", "resume"] as const;
+  const blobNames = ["photos", "stubs", "blog", "travel", "resume", "artists"] as const;
   const blob: VerifyConnectionsResult["blob"] = [];
   for (const name of blobNames) {
     try {

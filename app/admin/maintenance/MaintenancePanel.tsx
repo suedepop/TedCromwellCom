@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import BulkArtistLookupModal from "./BulkArtistLookupModal";
 
 interface BootstrapResult {
   ok: boolean;
@@ -61,6 +62,7 @@ export default function MaintenancePanel() {
   const [verify, setVerify] = useState<VerifyResult | null>(null);
   const [mb, setMb] = useState<MbResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [lookupOpen, setLookupOpen] = useState(false);
 
   async function runMb(opts: { dryRun?: boolean }) {
     setBusy("mb");
@@ -179,6 +181,19 @@ export default function MaintenancePanel() {
             )}
           </ResultBlock>
         )}
+      </Card>
+
+      <Card
+        title="Artist Lookup (interactive)"
+        description="Walk through every artist still missing a MusicBrainz or Discogs ID. For each one, see candidates from both sources side-by-side and pick the right match — or skip. Selections save one artist at a time so you can leave and resume."
+      >
+        <button
+          onClick={() => setLookupOpen(true)}
+          disabled={!!busy}
+          className="bg-accent text-bg px-3 py-1.5 rounded text-sm disabled:opacity-50"
+        >
+          Open lookup wizard
+        </button>
       </Card>
 
       <Card
@@ -396,6 +411,8 @@ export default function MaintenancePanel() {
         bootstrap, setlist.fm commit triggers a slug backfill plus a bootstrap. Buttons here are for
         ad-hoc runs, dry-runs, and the Discogs-ID refill.
       </p>
+
+      <BulkArtistLookupModal open={lookupOpen} onClose={() => setLookupOpen(false)} />
     </section>
   );
 }

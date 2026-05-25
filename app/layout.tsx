@@ -38,7 +38,8 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [siteUrl("/og-default.png")],
   },
-  icons: { icon: "/favicon.ico" },
+  // Icons are provided via the app/ file conventions (favicon.ico + icon.svg),
+  // which Next.js serves and injects automatically — no manual config needed.
   verification: {
     google: "O25B-8DpurJtooI8x760wFw9e4m5arcBSCN5wYPu9s4",
   },

@@ -283,6 +283,9 @@ export function artistMusicGroupJsonLd(artist: ArtistJsonLdInput): object {
     "@type": "MusicEvent",
     name: c.eventName ?? `${artist.name} at ${c.venueNameRaw}`,
     startDate: c.date,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    performer: { "@type": "MusicGroup", name: artist.name, url },
     url: siteUrl(`/concerts/${c.slug ?? c.id}`),
     location: {
       "@type": "Place",

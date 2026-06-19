@@ -3,14 +3,26 @@ import { listConcerts } from "./concerts";
 import { listTravelEntries } from "./travel";
 import { listRecords } from "./records";
 import { listVenues } from "./venues";
-import type { BlogPost, Concert, TravelEntry, Venue, VinylRecord } from "./types";
+import { listCoasters } from "./coasters";
+import { listParks } from "./parks";
+import type {
+  BlogPost,
+  Coaster,
+  Concert,
+  Park,
+  TravelEntry,
+  Venue,
+  VinylRecord,
+} from "./types";
 
 export type FeedItem =
   | { type: "blog"; sortDate: string; key: string; data: BlogPost }
   | { type: "concert"; sortDate: string; key: string; data: Concert }
   | { type: "travel"; sortDate: string; key: string; data: TravelEntry }
   | { type: "vinyl"; sortDate: string; key: string; data: VinylRecord }
-  | { type: "venue"; sortDate: string; key: string; data: Venue };
+  | { type: "venue"; sortDate: string; key: string; data: Venue }
+  | { type: "coaster"; sortDate: string; key: string; data: Coaster }
+  | { type: "park"; sortDate: string; key: string; data: Park };
 
 function blogSortDate(p: BlogPost): string {
   return p.publishedAt ?? p.updatedAt ?? "";
@@ -31,18 +43,32 @@ function venueSortDate(v: Venue): string {
   return "1970-01-01T00:00:00.000Z";
 }
 
+function coasterSortDate(c: Coaster): string {
+  // Coasters were bulk-imported with the same updatedAt, then edited
+  // individually. updatedAt captures the most recent meaningful change.
+  return c.updatedAt ?? c.createdAt ?? "1970-01-01T00:00:00.000Z";
+}
+
+function parkSortDate(p: Park): string {
+  return p.updatedAt ?? p.createdAt ?? "1970-01-01T00:00:00.000Z";
+}
+
 export type FeedItemType = FeedItem["type"];
 
 const DEFAULT_HOME_TYPES: FeedItemType[] = ["blog", "concert", "travel"];
 
 export async function listFeedAll(opts: { types?: FeedItemType[] } = {}): Promise<FeedItem[]> {
-  const types = new Set<FeedItemType>(opts.types ?? ["blog", "concert", "travel", "vinyl", "venue"]);
-  const [posts, concerts, travel, records, venues] = await Promise.all([
+  const types = new Set<FeedItemType>(
+    opts.types ?? ["blog", "concert", "travel", "vinyl", "venue", "coaster", "park"],
+  );
+  const [posts, concerts, travel, records, venues, coasters, parks] = await Promise.all([
     types.has("blog") ? listPosts("published").catch(() => []) : Promise.resolve([]),
     types.has("concert") ? listConcerts().catch(() => []) : Promise.resolve([]),
     types.has("travel") ? listTravelEntries().catch(() => []) : Promise.resolve([]),
     types.has("vinyl") ? listRecords().catch(() => []) : Promise.resolve([]),
     types.has("venue") ? listVenues().catch(() => []) : Promise.resolve([]),
+    types.has("coaster") ? listCoasters().catch(() => []) : Promise.resolve([]),
+    types.has("park") ? listParks().catch(() => []) : Promise.resolve([]),
   ]);
 
   const items: FeedItem[] = [
@@ -75,6 +101,18 @@ export async function listFeedAll(opts: { types?: FeedItemType[] } = {}): Promis
       sortDate: venueSortDate(v),
       key: `venue-${v.id}`,
       data: v,
+    })),
+    ...coasters.map<FeedItem>((c) => ({
+      type: "coaster",
+      sortDate: coasterSortDate(c),
+      key: `coaster-${c.id}`,
+      data: c,
+    })),
+    ...parks.map<FeedItem>((p) => ({
+      type: "park",
+      sortDate: parkSortDate(p),
+      key: `park-${p.id}`,
+      data: p,
     })),
   ];
 

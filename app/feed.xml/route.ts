@@ -25,7 +25,9 @@ function rfc822(d: string | undefined): string {
 
 export async function GET() {
   const items = (
-    await listFeedAll({ types: ["blog", "concert", "travel", "vinyl", "venue"] }).catch(() => [])
+    await listFeedAll({
+      types: ["blog", "concert", "travel", "vinyl", "venue", "coaster", "park"],
+    }).catch(() => [])
   ).slice(0, 50);
   const channelLink = siteUrl();
   const feedLink = siteUrl("/feed.xml");
@@ -90,6 +92,31 @@ export async function GET() {
           const where = [v.city, v.state, v.country].filter(Boolean).join(", ");
           description = (v.description ?? where).slice(0, 240);
           categories = ["Venue"];
+          break;
+        }
+        case "coaster": {
+          const c = item.data;
+          title = c.name;
+          path = `/coasters/${c.slug}`;
+          description =
+            (c.description ?? "")
+              .replace(/[#>*_`\[\]\(\)!]/g, "")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 240) ||
+            [c.manufacturer, c.type, c.openedYear ? `opened ${c.openedYear}` : null]
+              .filter(Boolean)
+              .join(" · ");
+          categories = ["Coaster", c.manufacturer ?? "", c.type ?? ""].filter(Boolean);
+          break;
+        }
+        case "park": {
+          const p = item.data;
+          title = p.name;
+          path = `/parks/${p.slug}`;
+          const where = [p.city, p.state, p.country].filter(Boolean).join(", ");
+          description = (p.description ?? where).slice(0, 240);
+          categories = ["Park"];
           break;
         }
       }

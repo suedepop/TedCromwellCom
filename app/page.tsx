@@ -1,18 +1,29 @@
 import Link from "next/link";
 import HomeFeed from "./HomeFeed";
+import CoasterCard from "@/components/coasters/CoasterCard";
 import { listFeedPage } from "@/lib/feed";
+import { listCoasters } from "@/lib/coasters";
+import { listParks } from "@/lib/parks";
 import { getResume } from "@/lib/resume";
 import { jsonLdScript, siteJsonLd } from "@/lib/jsonld";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 12;
+const RECENT_COASTERS = 4;
 
 export default async function HomePage() {
-  const [page, resume] = await Promise.all([
+  const [page, resume, allCoasters, allParks] = await Promise.all([
     listFeedPage(0, PAGE_SIZE).catch(() => ({ items: [], total: 0, offset: 0, limit: PAGE_SIZE })),
     getResume().catch(() => null),
+    listCoasters().catch(() => []),
+    listParks().catch(() => []),
   ]);
+
+  const parksById = new Map(allParks.map((p) => [p.id, p]));
+  const recentCoasters = [...allCoasters]
+    .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))
+    .slice(0, RECENT_COASTERS);
 
   return (
     <div className="space-y-12">
@@ -34,6 +45,7 @@ export default async function HomePage() {
           <Link href="/concerts" className="border border-border hover:border-accent hover:text-accent px-3 py-1 rounded">Concerts →</Link>
           <Link href="/venues" className="border border-border hover:border-accent hover:text-accent px-3 py-1 rounded">Venues →</Link>
           <Link href="/travel" className="border border-border hover:border-accent hover:text-accent px-3 py-1 rounded">Travel →</Link>
+          <Link href="/coasters" className="border border-border hover:border-accent hover:text-accent px-3 py-1 rounded">Coasters →</Link>
           <Link href="/resume" className="border border-border hover:border-accent hover:text-accent px-3 py-1 rounded">Resume →</Link>
         </nav>
       </section>
@@ -42,6 +54,24 @@ export default async function HomePage() {
         <section className="space-y-4">
           <h2 className="font-display text-3xl">Recent</h2>
           <HomeFeed initialItems={page.items} total={page.total} pageSize={PAGE_SIZE} />
+        </section>
+      )}
+
+      {recentCoasters.length > 0 && (
+        <section className="space-y-4">
+          <header className="flex items-end justify-between flex-wrap gap-3">
+            <h2 className="font-display text-3xl">Recent coasters</h2>
+            <p className="text-xs text-muted">
+              {allCoasters.length} coasters across {allParks.length} parks ·{" "}
+              <Link href="/coasters" className="hover:text-accent">All coasters →</Link>{" "}
+              <Link href="/parks" className="hover:text-accent">All parks →</Link>
+            </p>
+          </header>
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {recentCoasters.map((c) => (
+              <CoasterCard key={c.id} coaster={c} park={parksById.get(c.parkId)} />
+            ))}
+          </div>
         </section>
       )}
     </div>

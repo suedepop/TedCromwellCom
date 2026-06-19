@@ -9,6 +9,8 @@ const LABEL: Partial<Record<FeedItem["type"], string>> = {
   travel: "Travel",
   vinyl: "Vinyl",
   venue: "Venue",
+  coaster: "Coaster",
+  park: "Park",
 };
 
 export default function FeedCard({ item }: { item: FeedItem }) {

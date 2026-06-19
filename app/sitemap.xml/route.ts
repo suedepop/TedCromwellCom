@@ -4,6 +4,8 @@ import { listVenues } from "@/lib/venues";
 import { listTravelEntries } from "@/lib/travel";
 import { listRecords } from "@/lib/records";
 import { listStoredArtistSlugs } from "@/lib/artists";
+import { listParks } from "@/lib/parks";
+import { listCoasters } from "@/lib/coasters";
 import { siteUrl } from "@/lib/metadata";
 
 export const runtime = "nodejs";
@@ -44,13 +46,15 @@ ${items}
 }
 
 export async function GET() {
-  const [posts, concerts, venues, travel, records, artists] = await Promise.all([
+  const [posts, concerts, venues, travel, records, artists, parks, coasters] = await Promise.all([
     listPosts("published").catch(() => []),
     listConcerts().catch(() => []),
     listVenues().catch(() => []),
     listTravelEntries().catch(() => []),
     listRecords().catch(() => []),
     listStoredArtistSlugs().catch(() => []),
+    listParks().catch(() => []),
+    listCoasters().catch(() => []),
   ]);
 
   const now = new Date().toISOString();
@@ -63,6 +67,8 @@ export async function GET() {
     { loc: siteUrl("/travel"), lastmod: now, changefreq: "weekly", priority: 0.8 },
     { loc: siteUrl("/vinyl"), lastmod: now, changefreq: "weekly", priority: 0.7 },
     { loc: siteUrl("/artists"), lastmod: now, changefreq: "weekly", priority: 0.5 },
+    { loc: siteUrl("/coasters"), lastmod: now, changefreq: "weekly", priority: 0.7 },
+    { loc: siteUrl("/parks"), lastmod: now, changefreq: "weekly", priority: 0.6 },
     { loc: siteUrl("/resume"), lastmod: now, changefreq: "monthly", priority: 0.6 },
     { loc: siteUrl("/search"), lastmod: now, changefreq: "monthly", priority: 0.3 },
     { loc: siteUrl("/experiments"), lastmod: now, changefreq: "monthly", priority: 0.4 },
@@ -116,6 +122,22 @@ export async function GET() {
       lastmod: a.updatedAt ?? now,
       changefreq: "monthly",
       priority: 0.4,
+    });
+  }
+  for (const p of parks) {
+    entries.push({
+      loc: siteUrl(`/parks/${p.slug}`),
+      lastmod: p.updatedAt ?? now,
+      changefreq: "monthly",
+      priority: 0.5,
+    });
+  }
+  for (const c of coasters) {
+    entries.push({
+      loc: siteUrl(`/coasters/${c.slug}`),
+      lastmod: c.updatedAt ?? now,
+      changefreq: "monthly",
+      priority: 0.5,
     });
   }
 

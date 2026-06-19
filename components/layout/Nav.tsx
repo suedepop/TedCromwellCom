@@ -7,6 +7,7 @@ const links = [
   { href: "/blog", label: "Blog" },
   { href: "/concerts", label: "Concerts" },
   { href: "/travel", label: "Travel" },
+  { href: "/coasters", label: "Coasters" },
   { href: "/resume", label: "Resume" },
   { href: "/vinyl", label: "Vinyl" },
 ];

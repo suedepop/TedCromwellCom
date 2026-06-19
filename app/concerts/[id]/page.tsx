@@ -15,7 +15,7 @@ import { listRecords } from "@/lib/records";
 import { buildArtistSlug } from "@/lib/artists";
 import RecordCard from "@/components/vinyl/RecordCard";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const concert = await findConcertBySlugOrId(params.id);

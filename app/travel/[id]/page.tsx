@@ -8,7 +8,7 @@ import { pageMetadata } from "@/lib/metadata";
 import { jsonLdScript, travelEntryJsonLd } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const TravelMap = dynamicImport(() => import("@/components/travel/TravelMap"), { ssr: false });
 

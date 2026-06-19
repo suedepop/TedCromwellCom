@@ -1,6 +1,7 @@
 import { containers } from "./cosmos";
 import { listConcerts } from "./concerts";
 import { listRecords } from "./records";
+import { memo } from "./memo";
 import { slugify } from "./slug";
 import type { Artist, Concert, VinylRecord } from "./types";
 
@@ -208,15 +209,20 @@ async function buildIndex(): Promise<RawIndex> {
   return idx;
 }
 
+// Aggregating concerts+records+stored across thousands of items is the
+// single heaviest call in this app — cache for 60s so /artists, every
+// /artists/<slug>, and the sitemap share one build per minute per instance.
+const buildIndexCached = memo(buildIndex, 60_000, "artists:buildIndex");
+
 export async function listArtists(): Promise<ArtistAggregate[]> {
-  const idx = await buildIndex();
+  const idx = await buildIndexCached();
   return [...idx.byKey.values()].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
   );
 }
 
 export async function getArtist(slug: string): Promise<ArtistAggregate | null> {
-  const idx = await buildIndex();
+  const idx = await buildIndexCached();
   return idx.byKey.get(slug) ?? null;
 }
 

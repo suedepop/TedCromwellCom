@@ -12,7 +12,7 @@ import {
 import { pageMetadata } from "@/lib/metadata";
 import { artistMusicGroupJsonLd, jsonLdScript } from "@/lib/jsonld";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const artist = await getArtist(params.slug);

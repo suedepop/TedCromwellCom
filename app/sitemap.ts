@@ -4,7 +4,7 @@ import { listConcerts } from "@/lib/concerts";
 import { listVenues } from "@/lib/venues";
 import { listTravelEntries } from "@/lib/travel";
 import { listRecords } from "@/lib/records";
-import { listArtists } from "@/lib/artists";
+import { listStoredArtists } from "@/lib/artists";
 import { siteUrl } from "@/lib/metadata";
 
 // Render at request time — at build time the Cosmos env vars aren't available,
@@ -19,7 +19,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     listVenues().catch(() => []),
     listTravelEntries().catch(() => []),
     listRecords().catch(() => []),
-    listArtists().catch(() => []),
+    // Use the lightweight stored-artist list (one query) instead of
+    // listArtists() which rebuilds the full concerts+records aggregate —
+    // the sitemap only needs slugs.
+    listStoredArtists().catch(() => []),
   ]);
 
   const now = new Date().toISOString();
@@ -76,7 +79,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const artistEntries = artists.map<MetadataRoute.Sitemap[number]>((a) => ({
     url: siteUrl(`/artists/${a.slug}`),
-    lastModified: now,
+    lastModified: a.updatedAt ?? a.createdAt ?? now,
     changeFrequency: "monthly",
     priority: 0.4,
   }));

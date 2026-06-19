@@ -11,7 +11,7 @@ import { jsonLdScript, venueJsonLd } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import type { Concert, Venue } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const venue = await getVenue(params.id);

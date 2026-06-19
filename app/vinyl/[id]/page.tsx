@@ -7,7 +7,7 @@ import { buildArtistSlug } from "@/lib/artists";
 import { jsonLdScript, vinylRecordJsonLd } from "@/lib/jsonld";
 import PostBody from "@/components/blog/PostBody";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const record = await findRecordBySlugOrId(params.id);

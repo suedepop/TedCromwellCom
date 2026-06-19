@@ -7,7 +7,7 @@ import { pageMetadata } from "@/lib/metadata";
 import { blogPostJsonLdSpeakable, jsonLdScript } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = await findPostBySlug(params.slug);

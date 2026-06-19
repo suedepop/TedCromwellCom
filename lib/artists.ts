@@ -49,6 +49,20 @@ export async function listStoredArtists(): Promise<Artist[]> {
   return resources;
 }
 
+/** Slim projection — slug + updatedAt only — for the sitemap. Skipping
+ *  the descriptions (~500 chars × 1141 artists ≈ 570 KB) cuts both Cosmos
+ *  RU consumption and the JSON the runtime has to deserialize. */
+export interface ArtistSlugRow {
+  slug: string;
+  updatedAt?: string;
+}
+export async function listStoredArtistSlugs(): Promise<ArtistSlugRow[]> {
+  const { resources } = await containers.artists.items
+    .query<ArtistSlugRow>({ query: "SELECT c.slug, c.updatedAt FROM c" })
+    .fetchAll();
+  return resources;
+}
+
 export async function getStoredArtist(slug: string): Promise<Artist | null> {
   try {
     const { resource } = await containers.artists.item(slug, slug).read<Artist>();

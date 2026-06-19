@@ -56,13 +56,43 @@ interface MbResult {
   dryRun?: boolean;
 }
 
+interface CoasterSyncResult {
+  ok: boolean;
+  userId: number;
+  totalEntries: number;
+  parksAdded: number;
+  parksUpdated: number;
+  parksUntouched: number;
+  coastersAdded: number;
+  coastersUpdated: number;
+  coastersUntouched: number;
+  countries: string[];
+  log: string[];
+  error?: string;
+  dryRun?: boolean;
+}
+
 export default function MaintenancePanel() {
   const [bootstrap, setBootstrap] = useState<BootstrapResult | null>(null);
   const [slugs, setSlugs] = useState<SlugsResult | null>(null);
   const [verify, setVerify] = useState<VerifyResult | null>(null);
   const [mb, setMb] = useState<MbResult | null>(null);
+  const [coasterSync, setCoasterSync] = useState<CoasterSyncResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [lookupOpen, setLookupOpen] = useState(false);
+
+  async function runCoasterSync(opts: { dryRun?: boolean }) {
+    setBusy("coaster-sync");
+    setCoasterSync(null);
+    const res = await fetch("/api/maintenance/sync-coasters", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(opts),
+    });
+    const data = await res.json();
+    setBusy(null);
+    setCoasterSync(res.ok ? { ...data, dryRun: opts.dryRun } : { ok: false, ...data });
+  }
 
   async function runMb(opts: { dryRun?: boolean }) {
     setBusy("mb");
@@ -334,6 +364,66 @@ export default function MaintenancePanel() {
                 <p className="text-muted text-xs">
                   {slugs.dryRun ? "Dry-run only — nothing written." : "Saved to Cosmos."}
                 </p>
+              </>
+            )}
+          </ResultBlock>
+        )}
+      </Card>
+
+      <Card
+        title="Sync coasters from coaster-count"
+        description="Pull the public 'ridden' list for user 6972 from coaster-count.com (1 HTTP request), then upsert one Park doc per unique park and one Coaster doc per coaster. Idempotent: re-runs only add new entries and never clobber admin edits. Per-park geo and per-coaster stats need RCDB or manual entry — they aren't reachable on coaster-count anonymously."
+      >
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => runCoasterSync({ dryRun: true })}
+            disabled={!!busy}
+            className="border border-border px-3 py-1.5 rounded text-sm disabled:opacity-50"
+          >
+            Dry-run
+          </button>
+          <button
+            onClick={() => runCoasterSync({})}
+            disabled={!!busy}
+            className="bg-accent text-bg px-3 py-1.5 rounded text-sm disabled:opacity-50"
+          >
+            Run sync
+          </button>
+          {busy === "coaster-sync" && <Spinner />}
+        </div>
+        {coasterSync && (
+          <ResultBlock>
+            {coasterSync.error ? (
+              <p className="text-red-400">{coasterSync.error}</p>
+            ) : (
+              <>
+                <p>
+                  <strong>{coasterSync.totalEntries}</strong> entries · parks{" "}
+                  +<strong>{coasterSync.parksAdded}</strong> ~
+                  <strong>{coasterSync.parksUpdated}</strong> =
+                  <strong>{coasterSync.parksUntouched}</strong> · coasters{" "}
+                  +<strong>{coasterSync.coastersAdded}</strong> ~
+                  <strong>{coasterSync.coastersUpdated}</strong> =
+                  <strong>{coasterSync.coastersUntouched}</strong>
+                </p>
+                <p className="text-muted text-xs">
+                  {coasterSync.dryRun ? "Dry-run only — nothing written." : "Saved to Cosmos."}
+                  {coasterSync.countries.length > 0 && (
+                    <> · Countries: {coasterSync.countries.join(", ")}</>
+                  )}
+                </p>
+                {coasterSync.log.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted">
+                      Show {coasterSync.log.length} log lines
+                    </summary>
+                    <ul className="mt-1 space-y-0.5 font-mono max-h-64 overflow-auto">
+                      {coasterSync.log.map((l, i) => (
+                        <li key={i} className="text-muted">{l}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </>
             )}
           </ResultBlock>

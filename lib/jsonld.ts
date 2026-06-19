@@ -1,4 +1,4 @@
-import type { BlogPost, Concert, Resume, TravelEntry, Venue, VinylRecord } from "./types";
+import type { BlogPost, Coaster, Concert, Park, Resume, TravelEntry, Venue, VinylRecord } from "./types";
 import { SITE_NAME, siteUrl } from "./metadata";
 import { buildArtistSlug } from "./artists";
 
@@ -333,4 +333,115 @@ export function artistMusicGroupJsonLd(artist: ArtistJsonLdInput): object {
 
 export function jsonLdScript(data: object | object[]): string {
   return JSON.stringify(data, (_k, v) => (v === undefined ? undefined : v));
+}
+
+// ─── Coasters & parks ───────────────────────────────────────────────────────
+
+export function amusementParkJsonLd(park: Park, coasterCount: number): object {
+  const url = siteUrl(`/parks/${park.slug}`);
+  return {
+    "@context": "https://schema.org",
+    "@type": "AmusementPark",
+    name: park.name,
+    description: park.description,
+    url,
+    sameAs: park.url,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: park.city,
+      addressRegion: park.state,
+      addressCountry: park.country,
+    },
+    ...(typeof park.lat === "number" && typeof park.lng === "number"
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: park.lat,
+            longitude: park.lng,
+          },
+        }
+      : {}),
+    ...(coasterCount > 0
+      ? {
+          amenityFeature: {
+            "@type": "LocationFeatureSpecification",
+            name: "Roller coasters",
+            value: coasterCount,
+          },
+        }
+      : {}),
+    image: park.imageUrl,
+  };
+}
+
+export function coasterJsonLd(coaster: Coaster, park: Park | null): object {
+  const url = siteUrl(`/coasters/${coaster.slug}`);
+  const place = park
+    ? {
+        "@type": "AmusementPark",
+        name: park.name,
+        url: siteUrl(`/parks/${park.slug}`),
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: park.city,
+          addressRegion: park.state,
+          addressCountry: park.country,
+        },
+        ...(typeof park.lat === "number" && typeof park.lng === "number"
+          ? {
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: park.lat,
+                longitude: park.lng,
+              },
+            }
+          : {}),
+      }
+    : undefined;
+  return {
+    "@context": "https://schema.org",
+    "@type": "TouristAttraction",
+    name: coaster.name,
+    description: coaster.description,
+    url,
+    image: coaster.coverImageUrl,
+    containedInPlace: place,
+    ...(coaster.openedYear ? { dateOpened: String(coaster.openedYear) } : {}),
+    ...(coaster.manufacturer ? { brand: { "@type": "Brand", name: coaster.manufacturer } } : {}),
+    ...(coaster.stats?.heightFeet || coaster.stats?.topSpeedMph
+      ? {
+          additionalProperty: [
+            coaster.stats?.heightFeet && {
+              "@type": "PropertyValue",
+              name: "Height",
+              value: coaster.stats.heightFeet,
+              unitText: "ft",
+            },
+            coaster.stats?.dropFeet && {
+              "@type": "PropertyValue",
+              name: "Drop",
+              value: coaster.stats.dropFeet,
+              unitText: "ft",
+            },
+            coaster.stats?.lengthFeet && {
+              "@type": "PropertyValue",
+              name: "Length",
+              value: coaster.stats.lengthFeet,
+              unitText: "ft",
+            },
+            coaster.stats?.topSpeedMph && {
+              "@type": "PropertyValue",
+              name: "Top Speed",
+              value: coaster.stats.topSpeedMph,
+              unitText: "mph",
+            },
+            typeof coaster.stats?.inversions === "number" && {
+              "@type": "PropertyValue",
+              name: "Inversions",
+              value: coaster.stats.inversions,
+            },
+          ].filter(Boolean),
+        }
+      : {}),
+  };
 }

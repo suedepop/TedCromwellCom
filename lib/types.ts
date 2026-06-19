@@ -201,6 +201,78 @@ export interface Artist {
   updatedAt: string;
 }
 
+export interface Park {
+  id: string;                       // === slug (also the Cosmos partition key value)
+  slug: string;
+  name: string;                     // canonical display name
+  aliases?: string[];               // alternate spellings that should resolve to this park
+  city?: string;
+  state?: string;
+  country: string;
+  lat?: number;
+  lng?: number;
+  url?: string;                     // official park website
+  externalIds?: {
+    coasterCountId?: number;        // numeric park id at coaster-count.com (data-park-id)
+    rcdbId?: number;                // numeric park id at rcdb.com
+  };
+  description?: string;             // public markdown write-up
+  imageUrl?: string;
+  notes?: string;                   // private admin notes
+  closed?: boolean;                 // permanently closed?
+  closedYear?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CoasterType =
+  | "steel"
+  | "wood"
+  | "hybrid"
+  | "kiddie"
+  | "powered"
+  | "launched"
+  | "inverted"
+  | "flying"
+  | "mountain"
+  | "water"
+  | "other";
+
+export type CoasterStatus = "open" | "closed" | "sbno" | "under-construction" | "relocated";
+
+export interface CoasterStats {
+  heightFeet?: number;
+  dropFeet?: number;
+  lengthFeet?: number;
+  topSpeedMph?: number;
+  inversions?: number;
+  durationSeconds?: number;
+  maxG?: number;
+}
+
+export interface Coaster {
+  id: string;                       // === slug (also the Cosmos partition key value)
+  slug: string;
+  name: string;                     // canonical display name
+  parkId: string;                   // → Park.id (== slug)
+  externalIds?: {
+    coasterCountId?: number;        // numeric coaster id at coaster-count.com (e.g. c15986 → 15986)
+    rcdbId?: number;                // numeric coaster id at rcdb.com
+  };
+  manufacturer?: string;
+  type?: CoasterType;
+  openedYear?: number;
+  status?: CoasterStatus;
+  stats?: CoasterStats;
+  description?: string;             // public markdown — author-voice or neutral encyclopedic
+  writeUp?: string;                 // public markdown body, reserved for personal write-ups (mirrors VinylRecord.writeUp)
+  coverImageUrl?: string;
+  photos?: Photo[];
+  notes?: string;                   // private admin notes
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SearchIndexEntry {
   id: string;
   type: "post" | "concert" | "trip";

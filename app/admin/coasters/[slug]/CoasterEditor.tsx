@@ -44,6 +44,25 @@ export default function CoasterEditor({
   const [rcdbId, setRcdbId] = useState(coaster.externalIds?.rcdbId?.toString() ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadCover(file: File) {
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload/coaster-image", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? `Upload failed: ${res.status}`);
+        return;
+      }
+      setCoverImageUrl(data.blobUrl);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function save() {
     setBusy(true);
@@ -239,12 +258,45 @@ export default function CoasterEditor({
         />
       </Field>
 
-      <Field label="Cover image URL">
-        <input
-          value={coverImageUrl}
-          onChange={(e) => setCoverImageUrl(e.target.value)}
-          className="w-full bg-surface border border-border rounded px-3 py-2"
-        />
+      <Field label="Cover image">
+        {coverImageUrl && (
+          <img
+            src={coverImageUrl}
+            alt=""
+            className="w-full max-w-md rounded border border-border mb-2"
+          />
+        )}
+        <div className="flex gap-2 items-center">
+          <input
+            value={coverImageUrl}
+            onChange={(e) => setCoverImageUrl(e.target.value)}
+            placeholder="Paste a URL, or upload below"
+            className="flex-1 bg-surface border border-border rounded px-3 py-2 text-sm"
+          />
+          <label className="border border-accent text-accent px-3 py-2 rounded text-sm cursor-pointer hover:bg-accent hover:text-bg transition">
+            {uploading ? "Uploading…" : "Upload"}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadCover(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {coverImageUrl && (
+            <button
+              type="button"
+              onClick={() => setCoverImageUrl("")}
+              className="text-xs text-muted hover:text-red-400"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </Field>
 
       <Field label="Notes (private)">

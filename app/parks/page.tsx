@@ -18,20 +18,31 @@ const VenueMap = dynamicImport(() => import("@/components/venues/VenueMap"), {
 export default async function ParksIndex({
   searchParams,
 }: {
-  searchParams: { q?: string };
+  searchParams: { q?: string; country?: string };
 }) {
   const aggregates = await listParkAggregates();
 
   const q = (searchParams.q ?? "").trim().toLowerCase();
-  const filtered = q
-    ? aggregates.filter(
-        ({ park }) =>
-          park.name.toLowerCase().includes(q) ||
-          park.city?.toLowerCase().includes(q) ||
-          park.country?.toLowerCase().includes(q) ||
-          park.aliases?.some((a) => a.toLowerCase().includes(q)),
-      )
-    : aggregates;
+  const selectedCountry = searchParams.country ?? "";
+  const filtered = aggregates.filter(({ park }) => {
+    if (selectedCountry && park.country !== selectedCountry) return false;
+    if (q) {
+      const hay =
+        `${park.name} ${park.city ?? ""} ${park.country ?? ""} ${(park.aliases ?? []).join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Country chip data — count parks per country, sort by count desc then name.
+  const byCountry = new Map<string, number>();
+  for (const { park } of aggregates) {
+    byCountry.set(park.country, (byCountry.get(park.country) ?? 0) + 1);
+  }
+  const countryChips = [...byCountry.entries()].sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
 
   const pins = filtered
     .filter(({ park }) => typeof park.lat === "number" && typeof park.lng === "number")
@@ -58,12 +69,15 @@ export default async function ParksIndex({
         <div>
           <h1 className="font-display text-4xl">Parks</h1>
           <p className="text-muted mt-2">
-            {q
-              ? `${filtered.length} of ${aggregates.length} parks match "${searchParams.q}".`
+            {q || selectedCountry
+              ? `${filtered.length} of ${aggregates.length} parks match.`
               : `${aggregates.length} parks across ${countryCount} ${countryCount === 1 ? "country" : "countries"}.`}
           </p>
         </div>
         <form className="flex gap-2 text-sm">
+          {selectedCountry && (
+            <input type="hidden" name="country" value={selectedCountry} />
+          )}
           <input
             name="q"
             placeholder="Park, city, or country…"
@@ -71,13 +85,35 @@ export default async function ParksIndex({
             className="bg-surface border border-border rounded px-2 py-1 w-56"
           />
           <button className="bg-accent text-bg px-3 rounded">Filter</button>
-          {q && (
+          {(q || selectedCountry) && (
             <Link href="/parks" className="text-xs text-muted hover:text-accent self-center">
               Clear
             </Link>
           )}
         </form>
       </header>
+
+      {countryChips.length > 1 && (
+        <nav aria-label="Country" className="flex flex-wrap gap-1 text-xs">
+          {countryChips.map(([country, count]) => {
+            const active = selectedCountry === country;
+            const href = active
+              ? q
+                ? `/parks?q=${encodeURIComponent(q)}`
+                : "/parks"
+              : `/parks?country=${encodeURIComponent(country)}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+            return (
+              <Link
+                key={country}
+                href={href}
+                className={`border rounded px-2 py-1 ${active ? "border-accent text-accent" : "border-border hover:border-accent hover:text-accent"}`}
+              >
+                {country} <span className="text-muted">({count})</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
       <VenueMap pins={pins} height={420} zoomBoost={4} />
       <ul className="grid sm:grid-cols-2 gap-3">
         {sorted.map(({ park, coasterCount }) => (

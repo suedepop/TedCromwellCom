@@ -92,6 +92,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     thumbnailUrl: uploaded.thumbnailUrl,
     uploadedAt: new Date().toISOString(),
     hash,
+    // Basename only — strip any path fragments a browser might include.
+    filename: file.name.split(/[\\/]/).pop() || undefined,
   };
   const updated: TravelEntry = {
     ...current,

@@ -40,6 +40,10 @@ export interface Photo {
    *  re-uploads of the same file. Optional because photos uploaded before
    *  the dedup feature landed don't have one. */
   hash?: string;
+  /** Original filename at upload time (basename only). Optional because
+   *  photos uploaded before this field existed don't have one. Used for
+   *  filename-based sorting in the admin editor. */
+  filename?: string;
 }
 
 

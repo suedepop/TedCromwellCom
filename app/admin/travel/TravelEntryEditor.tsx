@@ -176,7 +176,28 @@ export default function TravelEntryEditor({ entry }: Props) {
       </Field>
 
       <section className="space-y-2">
-        <h2 className="font-display text-xl">Photos</h2>
+        <div className="flex items-baseline justify-between flex-wrap gap-2">
+          <h2 className="font-display text-xl">Photos</h2>
+          {photos.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                // Sort by filename descending — for phone/camera photos with
+                // date-encoded filenames like IMG_20260622_120000.jpg this
+                // puts the newest first. Photos without a filename fall
+                // back to uploadedAt so they still get a stable order.
+                const sortKey = (p: Photo) => p.filename ?? p.uploadedAt ?? "";
+                const next = [...photos].sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+                setPhotos(next);
+                save(next, featuredPhotoId);
+              }}
+              className="text-xs border border-border hover:border-accent hover:text-accent rounded px-2 py-1"
+              title="Sort by filename descending (newest camera photos first)"
+            >
+              Sort by filename ↓
+            </button>
+          )}
+        </div>
         <UploadDropzone
           endpoint={entry ? `/api/travel/${entry.id}/photos` : ""}
           multiple

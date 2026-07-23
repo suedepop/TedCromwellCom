@@ -177,7 +177,7 @@ export default function ResumeEditor({ resume }: { resume: Resume | null }) {
         <div className="col-span-2 space-y-2">
           <span className="text-xs uppercase tracking-wider text-muted">Resume PDF</span>
           <input value={pdfBlobUrl} onChange={(e) => setPdfBlobUrl(e.target.value)} className="w-full bg-surface border border-border rounded px-3 py-2 font-mono text-xs" placeholder="URL or upload below" />
-          <UploadDropzone endpoint="/api/upload/resume-pdf" accept="application/pdf" onUploaded={(r) => setPdfBlobUrl(r.blobUrl)} label="Upload PDF" />
+          <UploadDropzone endpoint="/api/upload/resume-pdf" accept="application/pdf" onUploaded={(r) => setPdfBlobUrl(r.blobUrl ?? "")} label="Upload PDF" />
         </div>
       </div>
       <Field label="Summary (markdown)">

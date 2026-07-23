@@ -133,7 +133,7 @@ export default function PostEditor({ post }: Props) {
         <div className="space-y-2">
           <input className="w-full bg-surface border border-border rounded px-3 py-2 text-sm" value={coverImageUrl} onChange={(e) => setCoverImageUrl(e.target.value)} placeholder="URL or upload below" />
           {coverImageUrl && <img src={coverImageUrl} alt="" className="max-h-40 rounded border border-border" />}
-          <UploadDropzone endpoint="/api/upload/blog-cover" onUploaded={(r) => setCoverImageUrl(r.blobUrl)} label="Upload cover image" />
+          <UploadDropzone endpoint="/api/upload/blog-cover" onUploaded={(r) => setCoverImageUrl(r.blobUrl ?? "")} label="Upload cover image" />
         </div>
       </Field>
       <Field label="Tags (comma-separated)">
@@ -169,7 +169,7 @@ export default function PostEditor({ post }: Props) {
             <UploadDropzone
               endpoint="/api/upload/blog-html"
               accept="text/html,.html,.htm"
-              onUploaded={(r) => setHtmlUrl(r.blobUrl)}
+              onUploaded={(r) => setHtmlUrl(r.blobUrl ?? "")}
               label="Upload .html file (one-page site)"
             />
             <p className="text-xs text-muted">

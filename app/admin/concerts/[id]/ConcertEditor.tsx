@@ -108,7 +108,8 @@ export default function ConcertEditor({
   }
 
   const batchDirtyRef = useRef(false);
-  function addPhoto(r: { blobUrl: string; thumbnailUrl?: string }) {
+  function addPhoto(r: { blobUrl?: string; thumbnailUrl?: string }) {
+    if (!r.blobUrl) return;
     const photo: Photo = {
       id: crypto.randomUUID(),
       blobUrl: r.blobUrl,
@@ -127,7 +128,8 @@ export default function ConcertEditor({
       return current;
     });
   }
-  function addStub(r: { blobUrl: string; thumbnailUrl?: string }) {
+  function addStub(r: { blobUrl?: string; thumbnailUrl?: string }) {
+    if (!r.blobUrl) return;
     const next: TicketStub[] = [
       ...stubs,
       {

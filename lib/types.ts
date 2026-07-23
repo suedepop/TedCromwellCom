@@ -36,6 +36,10 @@ export interface Photo {
   thumbnailUrl: string;
   caption?: string;
   uploadedAt: string;
+  /** SHA-256 of the original uploaded bytes (hex). Used to skip duplicate
+   *  re-uploads of the same file. Optional because photos uploaded before
+   *  the dedup feature landed don't have one. */
+  hash?: string;
 }
 
 

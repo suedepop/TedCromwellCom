@@ -32,7 +32,29 @@ export async function processAndUploadImage(
   containerName: BlobContainer,
   input: Buffer,
 ): Promise<ImageUploadResult> {
-  const id = randomUUID();
+  return processAndUploadImageInternal(containerName, input, randomUUID());
+}
+
+/**
+ * Same as processAndUploadImage but uses the caller-provided base name for
+ * the blob (so identical content — passed with the same base — overwrites
+ * itself rather than accumulating orphans). Typical use: hash the file bytes
+ * and pass the hash as the base. Returns the same shape as
+ * processAndUploadImage.
+ */
+export async function processAndUploadImageWithBase(
+  containerName: BlobContainer,
+  input: Buffer,
+  base: string,
+): Promise<ImageUploadResult> {
+  return processAndUploadImageInternal(containerName, input, base);
+}
+
+async function processAndUploadImageInternal(
+  containerName: BlobContainer,
+  input: Buffer,
+  base: string,
+): Promise<ImageUploadResult> {
   const decoded = await decodeToJpeg(input);
   const main = await sharp(decoded)
     .rotate()
@@ -46,8 +68,8 @@ export async function processAndUploadImage(
     .toBuffer();
 
   const [{ blobUrl }, { blobUrl: thumbnailUrl }] = await Promise.all([
-    uploadBufferWithName(containerName, main, "image/jpeg", `${id}.jpg`),
-    uploadBufferWithName(containerName, thumb, "image/jpeg", `${id}-thumb.jpg`),
+    uploadBufferWithName(containerName, main, "image/jpeg", `${base}.jpg`),
+    uploadBufferWithName(containerName, thumb, "image/jpeg", `${base}-thumb.jpg`),
   ]);
 
   return { blobUrl, thumbnailUrl, contentType: "image/jpeg" };

@@ -1,9 +1,9 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { Photo, TravelEntry } from "@/lib/types";
-import UploadDropzone from "@/components/media/UploadDropzone";
+import UploadDropzone, { type UploadResult } from "@/components/media/UploadDropzone";
 import SortablePhotos from "@/components/media/SortablePhotos";
 import FacebookPostButton from "@/components/admin/FacebookPostButton";
 
@@ -32,7 +32,6 @@ export default function TravelEntryEditor({ entry }: Props) {
   const [featuredPhotoId, setFeaturedPhotoId] = useState<string | undefined>(entry?.featuredPhotoId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const batchDirtyRef = useRef(false);
 
   const canSave = !!locationName && !!startDate && !!country && lat != null && lng != null;
 
@@ -76,23 +75,13 @@ export default function TravelEntryEditor({ entry }: Props) {
     else router.refresh();
   }
 
-  function addPhoto(r: { blobUrl: string; thumbnailUrl?: string }) {
-    const photo: Photo = {
-      id: crypto.randomUUID(),
-      blobUrl: r.blobUrl,
-      thumbnailUrl: r.thumbnailUrl ?? r.blobUrl,
-      uploadedAt: new Date().toISOString(),
-    };
-    batchDirtyRef.current = true;
-    setPhotos((prev) => [...prev, photo]);
-  }
-  function flushPhotos() {
-    if (!batchDirtyRef.current) return;
-    batchDirtyRef.current = false;
-    setPhotos((current) => {
-      save(current);
-      return current;
-    });
+  /** Each upload response is either a duplicate skip or a freshly-appended
+   *  Photo (already persisted on the entry by the server). Mirror it into
+   *  local state for the sortable grid without triggering another save. */
+  function onPhotoUploaded(r: UploadResult) {
+    if (r.duplicate || !r.photo) return;
+    const p = r.photo as Photo;
+    setPhotos((prev) => (prev.some((x) => x.id === p.id) ? prev : [...prev, p]));
   }
   function removePhoto(id: string) {
     const next = photos.filter((p) => p.id !== id);
@@ -189,12 +178,20 @@ export default function TravelEntryEditor({ entry }: Props) {
       <section className="space-y-2">
         <h2 className="font-display text-xl">Photos</h2>
         <UploadDropzone
-          endpoint="/api/upload/trip-cover"
+          endpoint={entry ? `/api/travel/${entry.id}/photos` : ""}
           multiple
-          onUploaded={addPhoto}
-          onBatchDone={flushPhotos}
+          concurrency={1}
+          onUploaded={onPhotoUploaded}
           label="Upload photos (multi-select + drag supported)"
+          disabled={!entry}
+          disabledHint="Save this entry first, then you can upload photos."
         />
+        {entry && (
+          <p className="text-xs text-muted">
+            Each photo is saved to the entry as soon as it uploads — safe to close the tab mid-batch.
+            Duplicate files (same content) are skipped automatically.
+          </p>
+        )}
         {photos.length > 0 && (
           <SortablePhotos
             photos={photos}

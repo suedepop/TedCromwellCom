@@ -182,19 +182,19 @@ export default function TravelEntryEditor({ entry }: Props) {
             <button
               type="button"
               onClick={() => {
-                // Sort by filename descending — for phone/camera photos with
+                // Sort by filename ascending — for phone/camera photos with
                 // date-encoded filenames like IMG_20260622_120000.jpg this
-                // puts the newest first. Photos without a filename fall
+                // puts the oldest first. Photos without a filename fall
                 // back to uploadedAt so they still get a stable order.
                 const sortKey = (p: Photo) => p.filename ?? p.uploadedAt ?? "";
-                const next = [...photos].sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+                const next = [...photos].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
                 setPhotos(next);
                 save(next, featuredPhotoId);
               }}
               className="text-xs border border-border hover:border-accent hover:text-accent rounded px-2 py-1"
-              title="Sort by filename descending (newest camera photos first)"
+              title="Sort by filename ascending (oldest camera photos first)"
             >
-              Sort by filename ↓
+              Sort by filename ↑
             </button>
           )}
         </div>

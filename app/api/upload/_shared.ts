@@ -24,7 +24,11 @@ export async function handleImageUpload(req: Request, container: BlobContainer) 
   const buffer = Buffer.from(await file.arrayBuffer());
   try {
     const result = await processAndUploadImage(container, buffer);
-    return NextResponse.json(result);
+    // Include the original basename so the caller can persist it on the Photo
+    // for later filename-based sorting. Basename only — strip any path
+    // fragments a browser might include.
+    const filename = file.name.split(/[\\/]/).pop() || undefined;
+    return NextResponse.json({ ...result, filename });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

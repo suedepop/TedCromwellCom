@@ -5,6 +5,10 @@ export interface UploadResult {
   blobUrl?: string;
   thumbnailUrl?: string;
   contentType?: string;
+  /** Original filename basename echoed back by the shared image handler.
+   *  Callers that persist Photo objects client-side (e.g. ConcertEditor)
+   *  put this on Photo.filename for later filename-based sorting. */
+  filename?: string;
   /** Set by endpoints that dedup uploads (e.g. /api/travel/[id]/photos).
    *  When true the server did NOT store the file — it was already attached
    *  to the target. */

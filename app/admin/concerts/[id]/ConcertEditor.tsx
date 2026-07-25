@@ -108,13 +108,14 @@ export default function ConcertEditor({
   }
 
   const batchDirtyRef = useRef(false);
-  function addPhoto(r: { blobUrl?: string; thumbnailUrl?: string }) {
+  function addPhoto(r: { blobUrl?: string; thumbnailUrl?: string; filename?: string }) {
     if (!r.blobUrl) return;
     const photo: Photo = {
       id: crypto.randomUUID(),
       blobUrl: r.blobUrl,
       thumbnailUrl: r.thumbnailUrl ?? r.blobUrl,
       uploadedAt: new Date().toISOString(),
+      filename: r.filename,
     };
     batchDirtyRef.current = true;
     setPhotos((prev) => [...prev, photo]);
@@ -240,7 +241,28 @@ export default function ConcertEditor({
       </section>
 
       <section className="space-y-2">
-        <h2 className="font-display text-xl">Photos</h2>
+        <div className="flex items-baseline justify-between flex-wrap gap-2">
+          <h2 className="font-display text-xl">Photos</h2>
+          {photos.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                // Sort by filename ascending — for phone/camera photos with
+                // date-encoded filenames like IMG_20260622_120000.jpg this
+                // puts the oldest first. Photos without a filename fall
+                // back to uploadedAt so they still get a stable order.
+                const sortKey = (p: Photo) => p.filename ?? p.uploadedAt ?? "";
+                const next = [...photos].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+                setPhotos(next);
+                save(next, stubs, setlists, featuredPhotoId);
+              }}
+              className="text-xs border border-border hover:border-accent hover:text-accent rounded px-2 py-1"
+              title="Sort by filename ascending (oldest camera photos first)"
+            >
+              Sort by filename ↑
+            </button>
+          )}
+        </div>
         <UploadDropzone
           endpoint="/api/upload/photo"
           multiple

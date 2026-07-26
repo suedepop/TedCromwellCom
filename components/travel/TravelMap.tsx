@@ -1,11 +1,10 @@
 "use client";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import type { LatLngBoundsExpression } from "leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Link from "next/link";
 import type { TravelEntry } from "@/lib/types";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -27,20 +26,34 @@ interface Props {
   initialZoom?: number;
 }
 
+/** Re-fit the map to the current set of points whenever they change.
+ *  Passing bounds as a prop on MapContainer only applies on initial mount and
+ *  can conflict with center/zoom; using useMap.fitBounds is unambiguous and
+ *  gives us control over padding so markers aren't clipped at the edges. */
+function FitToPoints({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length < 2) return;
+    const bounds = L.latLngBounds(points);
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10, animate: false });
+  }, [map, points]);
+  return null;
+}
+
 export default function TravelMap({ entries, height = 420, initialZoom }: Props) {
   const valid = entries.filter((e) => typeof e.lat === "number" && typeof e.lng === "number");
-  const bounds = useMemo<LatLngBoundsExpression | undefined>(() => {
-    if (valid.length < 2) return undefined;
-    return valid.map((e) => [e.lat, e.lng] as [number, number]);
-  }, [valid]);
+  const points = useMemo<[number, number][]>(
+    () => valid.map((e) => [e.lat, e.lng] as [number, number]),
+    [valid],
+  );
   const center: [number, number] = valid[0] ? [valid[0].lat, valid[0].lng] : [20, 0];
+  const zoom = initialZoom ?? (valid.length === 1 ? 6 : 2);
 
   return (
     <div style={{ height }} className="rounded overflow-hidden border border-border">
       <MapContainer
         center={center}
-        zoom={initialZoom ?? 2}
-        bounds={bounds}
+        zoom={zoom}
         scrollWheelZoom
         style={{ height: "100%", width: "100%", background: "#111" }}
       >
@@ -48,6 +61,7 @@ export default function TravelMap({ entries, height = 420, initialZoom }: Props)
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <FitToPoints points={points} />
         {valid.map((e) => (
           <Marker key={e.id} position={[e.lat, e.lng]} icon={amberIcon}>
             <Popup>

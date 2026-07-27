@@ -18,6 +18,10 @@ interface Props {
   onReorder: (next: Photo[]) => void;
   onSelectFeatured: (id: string) => void;
   onRemove: (id: string) => void;
+  /** When provided, each photo card shows an "Insert" button that calls this
+   *  with the photo. Wired by editors to insert a markdown image at the body
+   *  cursor position. Omit to hide the button entirely. */
+  onInsert?: (photo: Photo) => void;
 }
 
 export default function SortablePhotos({
@@ -26,6 +30,7 @@ export default function SortablePhotos({
   onReorder,
   onSelectFeatured,
   onRemove,
+  onInsert,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -53,6 +58,7 @@ export default function SortablePhotos({
               isFeatured={effectiveFeaturedId === p.id}
               onSelectFeatured={onSelectFeatured}
               onRemove={onRemove}
+              onInsert={onInsert}
             />
           ))}
         </div>
@@ -66,11 +72,13 @@ function SortablePhoto({
   isFeatured,
   onSelectFeatured,
   onRemove,
+  onInsert,
 }: {
   photo: Photo;
   isFeatured: boolean;
   onSelectFeatured: (id: string) => void;
   onRemove: (id: string) => void;
+  onInsert?: (photo: Photo) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.id,
@@ -121,6 +129,18 @@ function SortablePhoto({
       >
         ×
       </button>
+
+      {/* Insert into body (only when parent wires it up) */}
+      {onInsert && (
+        <button
+          type="button"
+          onClick={() => onInsert(photo)}
+          title="Insert into body at cursor"
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 text-xs bg-accent text-bg px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap"
+        >
+          ↳ Insert
+        </button>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import SortablePhotos from "@/components/media/SortablePhotos";
 import UploadDropzone from "@/components/media/UploadDropzone";
 import SetlistSortable from "@/components/concerts/SetlistSortable";
 import FacebookPostButton from "@/components/admin/FacebookPostButton";
+import type { MarkdownEditorHandle } from "@/components/ui/MarkdownEditor";
 
 const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 
@@ -55,6 +56,7 @@ export default function ConcertEditor({
   const [venueId, setVenueId] = useState(concert.venueId);
   const [notes, setNotes] = useState(concert.notes);
   const [writeUp, setWriteUp] = useState(concert.writeUp ?? "");
+  const writeUpRef = useRef<MarkdownEditorHandle>(null);
   const [linksText, setLinksText] = useState(
     concert.links.map((l) => `${l.label} | ${l.url}`).join("\n"),
   );
@@ -226,7 +228,7 @@ export default function ConcertEditor({
         <textarea rows={4} value={linksText} onChange={(e) => setLinksText(e.target.value)} className="w-full bg-surface border border-border rounded px-3 py-2 font-mono text-xs" />
       </Field>
       <Field label="Write-up (markdown — shown above the setlist on the public page)">
-        <MarkdownEditor value={writeUp} onChange={setWriteUp} />
+        <MarkdownEditor ref={writeUpRef} value={writeUp} onChange={setWriteUp} />
       </Field>
       <Field label="Notes (short, plain text — appears at the bottom of the public page)">
         <textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full bg-surface border border-border rounded px-3 py-2 text-sm" />
@@ -284,6 +286,7 @@ export default function ConcertEditor({
               }}
               onSelectFeatured={chooseFeatured}
               onRemove={removePhoto}
+              onInsert={(p) => writeUpRef.current?.insertImage(p.blobUrl)}
             />
           </>
         )}

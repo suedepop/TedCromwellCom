@@ -2,25 +2,41 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Link } from "@tiptap/extension-link";
+import { Image } from "@tiptap/extension-image";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { Markdown } from "tiptap-markdown";
-import { useEffect } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { youtubeId } from "@/lib/youtube";
 import { instagramPath } from "@/lib/instagram";
+
+export interface MarkdownEditorHandle {
+  /** Insert a markdown image at the current cursor position. */
+  insertImage: (src: string, alt?: string) => void;
+}
 
 interface Props {
   value: string;
   onChange: (markdown: string) => void;
+  /** POST endpoint for the toolbar "Image" upload button. Any endpoint that
+   *  returns { blobUrl }. Defaults to /api/upload/photo. */
+  uploadEndpoint?: string;
 }
 
-export default function MarkdownEditor({ value, onChange }: Props) {
+const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function MarkdownEditor(
+  { value, onChange, uploadEndpoint = "/api/upload/photo" },
+  ref,
+) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: {} }),
       Link.configure({ openOnClick: false }),
+      Image.configure({ HTMLAttributes: { class: "md-image" } }),
       Table.configure({ resizable: false, HTMLAttributes: { class: "md-table" } }),
       TableRow,
       TableHeader,
@@ -47,6 +63,36 @@ export default function MarkdownEditor({ value, onChange }: Props) {
     const current: string = editor.storage.markdown.getMarkdown();
     if (current !== value) editor.commands.setContent(value);
   }, [value, editor]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      insertImage: (src: string, alt = "") => {
+        if (!editor) return;
+        editor.chain().focus().setImage({ src, alt }).run();
+      },
+    }),
+    [editor],
+  );
+
+  async function onImageFileChosen(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(uploadEndpoint, { method: "POST", body: fd });
+      if (!res.ok) {
+        alert(`Image upload failed: ${res.status}`);
+        return;
+      }
+      const data = (await res.json()) as { blobUrl?: string };
+      if (data.blobUrl && editor) {
+        editor.chain().focus().setImage({ src: data.blobUrl, alt: "" }).run();
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
 
   if (!editor) return null;
 
@@ -80,6 +126,26 @@ export default function MarkdownEditor({ value, onChange }: Props) {
           Link
         </button>
         <span className="mx-1 border-l border-border" />
+        <button
+          type="button"
+          className={btn(false)}
+          disabled={uploading}
+          onClick={() => fileInputRef.current?.click()}
+          title="Upload and insert an image inline"
+        >
+          {uploading ? "Uploading…" : "🖼 Image"}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.heic,.heif"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onImageFileChosen(f);
+            e.target.value = "";
+          }}
+        />
         <button
           type="button"
           className={btn(false)}
@@ -151,4 +217,6 @@ export default function MarkdownEditor({ value, onChange }: Props) {
       <EditorContent editor={editor} />
     </div>
   );
-}
+});
+
+export default MarkdownEditor;

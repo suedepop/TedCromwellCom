@@ -1,11 +1,12 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Photo, TravelEntry } from "@/lib/types";
 import UploadDropzone, { type UploadResult } from "@/components/media/UploadDropzone";
 import SortablePhotos from "@/components/media/SortablePhotos";
 import FacebookPostButton from "@/components/admin/FacebookPostButton";
+import type { MarkdownEditorHandle } from "@/components/ui/MarkdownEditor";
 
 const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 const LocationPicker = dynamic(() => import("@/components/travel/LocationPicker"), {
@@ -28,6 +29,7 @@ export default function TravelEntryEditor({ entry }: Props) {
   const [lat, setLat] = useState<number | null>(entry?.lat ?? null);
   const [lng, setLng] = useState<number | null>(entry?.lng ?? null);
   const [content, setContent] = useState(entry?.content ?? "");
+  const contentRef = useRef<MarkdownEditorHandle>(null);
   const [photos, setPhotos] = useState<Photo[]>(entry?.photos ?? []);
   const [featuredPhotoId, setFeaturedPhotoId] = useState<string | undefined>(entry?.featuredPhotoId);
   const [busy, setBusy] = useState(false);
@@ -172,7 +174,7 @@ export default function TravelEntryEditor({ entry }: Props) {
       </div>
 
       <Field label="Blog post (markdown)">
-        <MarkdownEditor value={content} onChange={setContent} />
+        <MarkdownEditor ref={contentRef} value={content} onChange={setContent} />
       </Field>
 
       <section className="space-y-2">
@@ -223,6 +225,7 @@ export default function TravelEntryEditor({ entry }: Props) {
             }}
             onSelectFeatured={chooseFeatured}
             onRemove={removePhoto}
+            onInsert={(p) => contentRef.current?.insertImage(p.blobUrl)}
           />
         )}
         <p className="text-xs text-muted">Drag the ⋮⋮ handle on top of any photo to reorder.</p>

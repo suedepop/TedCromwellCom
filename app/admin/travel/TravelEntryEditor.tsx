@@ -6,9 +6,10 @@ import type { Photo, TravelEntry } from "@/lib/types";
 import UploadDropzone, { type UploadResult } from "@/components/media/UploadDropzone";
 import SortablePhotos from "@/components/media/SortablePhotos";
 import FacebookPostButton from "@/components/admin/FacebookPostButton";
-import type { MarkdownEditorHandle } from "@/components/ui/MarkdownEditor";
+// Direct import (not next/dynamic) so the forwardRef survives — see the
+// matching comment in ConcertEditor for why.
+import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/ui/MarkdownEditor";
 
-const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
 const LocationPicker = dynamic(() => import("@/components/travel/LocationPicker"), {
   ssr: false,
   loading: () => <div className="h-[320px] bg-surface border border-border rounded" />,

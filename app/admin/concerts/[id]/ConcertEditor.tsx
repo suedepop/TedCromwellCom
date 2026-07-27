@@ -1,5 +1,4 @@
 "use client";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Concert, Photo, Setlist, TicketStub, Venue } from "@/lib/types";
@@ -7,9 +6,11 @@ import SortablePhotos from "@/components/media/SortablePhotos";
 import UploadDropzone from "@/components/media/UploadDropzone";
 import SetlistSortable from "@/components/concerts/SetlistSortable";
 import FacebookPostButton from "@/components/admin/FacebookPostButton";
-import type { MarkdownEditorHandle } from "@/components/ui/MarkdownEditor";
-
-const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), { ssr: false });
+// Direct import (not next/dynamic) so the forwardRef survives — dynamic()
+// doesn't forward refs, which silently broke SortablePhotos' Insert button.
+// MarkdownEditor uses immediatelyRender:false, so tiptap defers all browser
+// APIs to the client and SSR just renders null cleanly.
+import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/ui/MarkdownEditor";
 
 export interface MergeCandidate {
   id: string;

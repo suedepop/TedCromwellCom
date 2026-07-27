@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { containers } from "./cosmos";
+import { memo } from "./memo";
 import type { BlogPost } from "./types";
 
 export interface BlogCreateInput {
@@ -17,7 +18,7 @@ export interface BlogCreateInput {
 
 export interface BlogUpdateInput extends Partial<BlogCreateInput> {}
 
-export async function listPosts(status?: "draft" | "published"): Promise<BlogPost[]> {
+async function listPostsRaw(status?: "draft" | "published"): Promise<BlogPost[]> {
   const query = status
     ? { query: "SELECT * FROM c WHERE c.status = @status", parameters: [{ name: "@status", value: status }] }
     : { query: "SELECT * FROM c" };
@@ -30,6 +31,11 @@ export async function listPosts(status?: "draft" | "published"): Promise<BlogPos
   });
   return resources;
 }
+
+// 60s in-process cache — shared across the list page, sitemap, RSS, llms.txt,
+// and homepage feed. Admin writes see up to 60s of staleness, which is fine
+// given the existing edge + ISR layers already stale by hours.
+export const listPosts = memo(listPostsRaw, 60_000, "list:posts");
 
 export async function getPost(id: string, status: "draft" | "published"): Promise<BlogPost | null> {
   try {

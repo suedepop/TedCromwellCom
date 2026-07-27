@@ -1,4 +1,5 @@
 import { containers } from "./cosmos";
+import { memo } from "./memo";
 import { slugify } from "./slug";
 import type { Coaster } from "./types";
 
@@ -10,7 +11,7 @@ export interface CoasterFilters {
   status?: string;
 }
 
-export async function listCoasters(filters: CoasterFilters = {}): Promise<Coaster[]> {
+async function listCoastersRaw(filters: CoasterFilters = {}): Promise<Coaster[]> {
   const where: string[] = [];
   const parameters: { name: string; value: string }[] = [];
   if (filters.parkId) {
@@ -41,6 +42,7 @@ export async function listCoasters(filters: CoasterFilters = {}): Promise<Coaste
   );
   return resources;
 }
+export const listCoasters = memo(listCoastersRaw, 60_000, "list:coasters");
 
 export async function getCoaster(slug: string): Promise<Coaster | null> {
   try {

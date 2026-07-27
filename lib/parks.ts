@@ -3,7 +3,7 @@ import { memo } from "./memo";
 import { slugify } from "./slug";
 import type { Park } from "./types";
 
-export async function listParks(): Promise<Park[]> {
+async function listParksRaw(): Promise<Park[]> {
   const { resources } = await containers.parks.items
     .query<Park>({ query: "SELECT * FROM c" })
     .fetchAll();
@@ -12,6 +12,7 @@ export async function listParks(): Promise<Park[]> {
   );
   return resources;
 }
+export const listParks = memo(listParksRaw, 60_000, "list:parks");
 
 export async function getPark(slug: string): Promise<Park | null> {
   try {

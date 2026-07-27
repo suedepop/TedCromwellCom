@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { containers } from "./cosmos";
+import { memo } from "./memo";
 import type { Concert } from "./types";
 
 export interface ConcertFilters {
@@ -8,7 +9,7 @@ export interface ConcertFilters {
   artist?: string;
 }
 
-export async function listConcerts(filters: ConcertFilters = {}): Promise<Concert[]> {
+async function listConcertsRaw(filters: ConcertFilters = {}): Promise<Concert[]> {
   const where: string[] = [];
   const parameters: { name: string; value: string }[] = [];
   if (filters.venueId) {
@@ -32,6 +33,8 @@ export async function listConcerts(filters: ConcertFilters = {}): Promise<Concer
     .fetchAll();
   return resources;
 }
+
+export const listConcerts = memo(listConcertsRaw, 60_000, "list:concerts");
 
 export async function findConcertById(id: string): Promise<Concert | null> {
   const { resources } = await containers.concerts.items

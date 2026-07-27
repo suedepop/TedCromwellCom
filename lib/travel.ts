@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { containers } from "./cosmos";
+import { memo } from "./memo";
 import type { Photo, TravelEntry } from "./types";
 
 export interface TravelEntryInput {
@@ -28,7 +29,7 @@ function sortDesc(entries: TravelEntry[]): TravelEntry[] {
   return entries;
 }
 
-export async function listTravelEntries(): Promise<TravelEntry[]> {
+async function listTravelEntriesRaw(): Promise<TravelEntry[]> {
   const { resources } = await containers.trips.items
     .query<TravelEntry>({
       query: "SELECT * FROM c WHERE IS_DEFINED(c.locationName)",
@@ -36,6 +37,7 @@ export async function listTravelEntries(): Promise<TravelEntry[]> {
     .fetchAll();
   return sortDesc(resources);
 }
+export const listTravelEntries = memo(listTravelEntriesRaw, 60_000, "list:travel");
 
 export async function getTravelEntry(id: string): Promise<TravelEntry | null> {
   try {

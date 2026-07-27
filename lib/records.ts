@@ -1,9 +1,10 @@
 import { containers } from "./cosmos";
+import { memo } from "./memo";
 import type { VinylRecord } from "./types";
 
 export type RecordSort = "artist" | "added" | "year";
 
-export async function listRecords(
+async function listRecordsRaw(
   opts: { includeHidden?: boolean; sort?: RecordSort } = {},
 ): Promise<VinylRecord[]> {
   const where = opts.includeHidden ? "" : "WHERE c.hidden != true OR NOT IS_DEFINED(c.hidden)";
@@ -34,6 +35,7 @@ export async function listRecords(
   }
   return resources;
 }
+export const listRecords = memo(listRecordsRaw, 60_000, "list:records");
 
 export async function getRecord(id: string): Promise<VinylRecord | null> {
   try {

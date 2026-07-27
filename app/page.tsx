@@ -7,6 +7,11 @@ import { listParks } from "@/lib/parks";
 import { getResume } from "@/lib/resume";
 import { jsonLdScript, siteJsonLd } from "@/lib/jsonld";
 
+// Kept dynamic on purpose: at build time the Cosmos env vars aren't
+// available, so a `revalidate=` prerender would silently cache an empty
+// homepage for an hour. The 60s memoization on listPosts/listCoasters/
+// listParks/etc. below already collapses this to ~1 Cosmos pass per minute
+// per SWA function instance, which is the real win.
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 12;

@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { containers } from "./cosmos";
+import { memo } from "./memo";
 import type { Venue, Concert } from "./types";
 
-export async function listVenues(): Promise<Venue[]> {
+async function listVenuesRaw(): Promise<Venue[]> {
   const { resources } = await containers.venues.items
     .query<Venue>({ query: "SELECT * FROM c ORDER BY c.canonicalName" })
     .fetchAll();
   return resources;
 }
+export const listVenues = memo(listVenuesRaw, 60_000, "list:venues");
 
 export async function getVenue(id: string): Promise<Venue | null> {
   try {

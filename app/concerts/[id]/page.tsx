@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/metadata";
 import { concertEventJsonLd, jsonLdScript } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -20,15 +20,7 @@ export const revalidate = 3600;
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const concert = await findConcertBySlugOrId(params.id);
   if (!concert) return {};
-  // Redirect from raw-id URL to slug URL happens HERE (not in the page
-  // component) because generateMetadata runs BEFORE the streaming render
-  // starts, so throw-based redirects convert to a real HTTP 308. If moved
-  // into the page function, Next embeds the redirect as a client-side
-  // streaming instruction and the initial response is HTTP 200 — Googlebot
-  // wouldn't follow it.
-  if (concert.slug && params.id !== concert.slug) {
-    permanentRedirect(`/concerts/${concert.slug}`);
-  }
+  // Note: id→slug canonicalization happens in middleware.ts.
   const bands = concertBandLine(concert);
   const date = new Date(concert.date).toLocaleDateString(undefined, { dateStyle: "long" });
   const title = concert.eventName ? `${concert.eventName} — ${bands}` : bands;

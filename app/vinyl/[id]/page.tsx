@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { findRecordBySlugOrId } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
@@ -12,15 +12,9 @@ export const revalidate = 3600;
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const record = await findRecordBySlugOrId(params.id);
   if (!record) return {};
-  // Redirect from raw-id URL to slug URL happens HERE (not in the page
-  // component) because generateMetadata runs BEFORE the streaming render
-  // starts, so throw-based redirects convert to a real HTTP 308. If moved
-  // into the page function, Next embeds the redirect as a client-side
-  // streaming instruction and the initial response is HTTP 200 — Googlebot
-  // wouldn't follow it.
-  if (record.slug && params.id !== record.slug) {
-    permanentRedirect(`/vinyl/${record.slug}`);
-  }
+  // Note: id→slug canonicalization happens in middleware.ts, not here,
+  // because Next.js redirects fired during metadata/render stream inline
+  // instead of emitting a real HTTP 308.
   const artists = record.artists.map((a) => a.name).join(" · ");
   return pageMetadata({
     title: `${artists} — ${record.title}`,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import PostBody from "@/components/blog/PostBody";
 import { findTravelEntryBySlugOrId } from "@/lib/travel";
@@ -15,12 +15,7 @@ const TravelMap = dynamicImport(() => import("@/components/travel/TravelMap"), {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const entry = await findTravelEntryBySlugOrId(params.id);
   if (!entry) return {};
-  // Redirect from raw-id URL to slug URL happens HERE (not in the page
-  // component) because generateMetadata runs BEFORE the streaming render
-  // starts, so throw-based redirects convert to a real HTTP 308.
-  if (entry.slug && params.id !== entry.slug) {
-    permanentRedirect(`/travel/${entry.slug}`);
-  }
+  // Note: id→slug canonicalization happens in middleware.ts.
   const where = [entry.city, entry.state, entry.country].filter(Boolean).join(", ");
   const dateRange =
     entry.endDate && entry.endDate !== entry.startDate

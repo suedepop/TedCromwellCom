@@ -52,10 +52,16 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(
-      `${origin}/api/resolve-slug?type=${rule.type}&id=${encodeURIComponent(rest)}`,
-      { headers: { "user-agent": "middleware-slug-resolver" } },
-    );
+    // On Azure SWA, `req.nextUrl.origin` sometimes resolves to the internal
+    // container hostname which the outbound fetch can't reach. Build the URL
+    // from the incoming Host header (what the user hit) instead — that
+    // resolves to the public edge which routes back to the same app.
+    const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? new URL(origin).host;
+    const proto = req.headers.get("x-forwarded-proto") ?? "https";
+    const resolveUrl = `${proto}://${host}/api/resolve-slug?type=${rule.type}&id=${encodeURIComponent(rest)}`;
+    const res = await fetch(resolveUrl, {
+      headers: { "user-agent": "middleware-slug-resolver" },
+    });
     if (!res.ok || res.status === 204) {
       const p = NextResponse.next();
       p.headers.set("x-mw", `resolve-${res.status}:${rest}`);

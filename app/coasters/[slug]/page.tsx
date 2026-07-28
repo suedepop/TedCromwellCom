@@ -13,6 +13,7 @@ import { getPark } from "@/lib/parks";
 import { pageMetadata } from "@/lib/metadata";
 import { coasterJsonLd, jsonLdScript } from "@/lib/jsonld";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import PhotoLightbox from "@/components/media/PhotoLightbox";
 import type { Coaster, CoasterStats } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -78,6 +79,13 @@ export default async function CoasterDetail({ params }: { params: { slug: string
   );
   const facts = coasterHeaderFacts(coaster);
   const stats = statsFacts(coaster.stats);
+  const photos = coaster.photos ?? [];
+  // Hero picks the explicit coverImageUrl if set (manual override), else the
+  // featured photo, else the first uploaded photo.
+  const featured =
+    photos.find((p) => p.id === coaster.featuredPhotoId) ?? photos[0];
+  const heroUrl = coaster.coverImageUrl || featured?.blobUrl;
+  const galleryOthers = photos.filter((p) => p.id !== featured?.id);
 
   return (
     <section className="space-y-8">
@@ -111,9 +119,9 @@ export default async function CoasterDetail({ params }: { params: { slug: string
 
       <section className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-5">
-          {coaster.coverImageUrl && (
+          {heroUrl && (
             <img
-              src={coaster.coverImageUrl}
+              src={heroUrl}
               alt={coaster.name}
               className="w-full rounded border border-border"
             />
@@ -164,6 +172,18 @@ export default async function CoasterDetail({ params }: { params: { slug: string
           </div>
         </div>
       </section>
+
+      {galleryOthers.length > 0 && (
+        <section>
+          <h2 className="font-display text-2xl mb-3">Photos</h2>
+          <PhotoLightbox
+            photos={photos}
+            excludeIds={featured ? [featured.id] : []}
+            context="coaster"
+            contextId={coaster.slug}
+          />
+        </section>
+      )}
 
       {siblings.length > 0 && park && (
         <section>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminFromRequest } from "@/lib/authServer";
 import { deleteCoaster, getCoaster, upsertCoasterBySlug } from "@/lib/coasters";
-import type { CoasterStats, CoasterStatus, CoasterType } from "@/lib/types";
+import type { CoasterStats, CoasterStatus, CoasterType, Photo } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -31,6 +31,30 @@ function str(v: unknown): string | undefined {
   if (typeof v !== "string") return undefined;
   const t = v.trim();
   return t ? t : undefined;
+}
+
+function parsePhotos(v: unknown): Photo[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: Photo[] = [];
+  for (const raw of v) {
+    if (!raw || typeof raw !== "object") continue;
+    const p = raw as Record<string, unknown>;
+    const id = typeof p.id === "string" ? p.id : undefined;
+    const blobUrl = typeof p.blobUrl === "string" ? p.blobUrl : undefined;
+    const thumbnailUrl = typeof p.thumbnailUrl === "string" ? p.thumbnailUrl : blobUrl;
+    const uploadedAt = typeof p.uploadedAt === "string" ? p.uploadedAt : new Date().toISOString();
+    if (!id || !blobUrl || !thumbnailUrl) continue;
+    out.push({
+      id,
+      blobUrl,
+      thumbnailUrl,
+      uploadedAt,
+      caption: typeof p.caption === "string" ? p.caption : undefined,
+      hash: typeof p.hash === "string" ? p.hash : undefined,
+      filename: typeof p.filename === "string" ? p.filename : undefined,
+    });
+  }
+  return out;
 }
 
 function parseStats(v: unknown): CoasterStats | undefined {
@@ -74,6 +98,12 @@ export async function PUT(req: Request, { params }: { params: { slug: string } }
     ? (statusRaw as CoasterStatus)
     : undefined;
 
+  const photos = parsePhotos(body.photos);
+  const featuredPhotoId =
+    typeof body.featuredPhotoId === "string" && body.featuredPhotoId.trim()
+      ? body.featuredPhotoId.trim()
+      : undefined;
+
   const updated = await upsertCoasterBySlug(params.slug, {
     name,
     parkId,
@@ -86,6 +116,8 @@ export async function PUT(req: Request, { params }: { params: { slug: string } }
     description: typeof body.description === "string" ? body.description : undefined,
     writeUp: typeof body.writeUp === "string" ? body.writeUp : undefined,
     coverImageUrl: str(body.coverImageUrl),
+    photos,
+    featuredPhotoId,
     notes: typeof body.notes === "string" ? body.notes : undefined,
   });
   return NextResponse.json(updated);

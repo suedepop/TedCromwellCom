@@ -276,6 +276,7 @@ export interface Coaster {
   writeUp?: string;                 // public markdown body, reserved for personal write-ups (mirrors VinylRecord.writeUp)
   coverImageUrl?: string;
   photos?: Photo[];
+  featuredPhotoId?: string;         // one of photos[].id — used as hero on the public page
   notes?: string;                   // private admin notes
   createdAt: string;
   updatedAt: string;

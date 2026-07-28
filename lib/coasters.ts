@@ -67,6 +67,10 @@ export type CoasterInput = Partial<
   Omit<Coaster, "id" | "slug" | "createdAt" | "updatedAt">
 > & { name: string; parkId: string };
 
+// Note: photos array is a top-level Coaster field. To upsert a coaster
+// while preserving photos across a PUT that doesn't send them, we merge
+// existing photos in the upsert below.
+
 export async function upsertCoasterBySlug(slug: string, input: CoasterInput): Promise<Coaster> {
   const now = new Date().toISOString();
   const existing = await getCoaster(slug);
@@ -85,6 +89,7 @@ export async function upsertCoasterBySlug(slug: string, input: CoasterInput): Pr
     writeUp: input.writeUp ?? existing?.writeUp,
     coverImageUrl: input.coverImageUrl ?? existing?.coverImageUrl,
     photos: input.photos ?? existing?.photos,
+    featuredPhotoId: input.featuredPhotoId ?? existing?.featuredPhotoId,
     notes: input.notes ?? existing?.notes,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,

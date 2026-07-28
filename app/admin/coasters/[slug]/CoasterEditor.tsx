@@ -1,8 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import type { Coaster, CoasterStatus, CoasterType, Park } from "@/lib/types";
+import { useRef, useState } from "react";
+import type { Coaster, CoasterStatus, CoasterType, Park, Photo } from "@/lib/types";
+import UploadDropzone, { type UploadResult } from "@/components/media/UploadDropzone";
+import SortablePhotos from "@/components/media/SortablePhotos";
+import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/ui/MarkdownEditor";
 
 const TYPES: CoasterType[] = [
   "steel", "wood", "hybrid", "kiddie", "powered", "launched", "inverted", "flying", "mountain", "water", "other",
@@ -37,6 +40,10 @@ export default function CoasterEditor({
   const [description, setDescription] = useState(coaster.description ?? "");
   const [writeUp, setWriteUp] = useState(coaster.writeUp ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState(coaster.coverImageUrl ?? "");
+  const [photos, setPhotos] = useState<Photo[]>(coaster.photos ?? []);
+  const [featuredPhotoId, setFeaturedPhotoId] = useState<string | undefined>(
+    coaster.featuredPhotoId,
+  );
   const [notes, setNotes] = useState(coaster.notes ?? "");
   const [coasterCountId, setCoasterCountId] = useState(
     coaster.externalIds?.coasterCountId?.toString() ?? "",
@@ -45,6 +52,8 @@ export default function CoasterEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const descriptionRef = useRef<MarkdownEditorHandle>(null);
+  const writeUpRef = useRef<MarkdownEditorHandle>(null);
 
   async function uploadCover(file: File) {
     setUploading(true);
@@ -64,7 +73,10 @@ export default function CoasterEditor({
     }
   }
 
-  async function save() {
+  async function save(
+    nextPhotos: Photo[] = photos,
+    nextFeatured: string | undefined = featuredPhotoId,
+  ) {
     setBusy(true);
     setError(null);
     const res = await fetch(`/api/coasters/${coaster.slug}`, {
@@ -89,6 +101,9 @@ export default function CoasterEditor({
         description: description || undefined,
         writeUp: writeUp || undefined,
         coverImageUrl: coverImageUrl || undefined,
+        photos: nextPhotos,
+        featuredPhotoId:
+          nextFeatured && nextPhotos.some((p) => p.id === nextFeatured) ? nextFeatured : undefined,
         notes: notes || undefined,
         externalIds: {
           coasterCountId: coasterCountId ? Number(coasterCountId) : undefined,
@@ -103,6 +118,27 @@ export default function CoasterEditor({
       return;
     }
     router.refresh();
+  }
+
+  // Per-photo endpoint returns the newly-appended Photo. The dropzone
+  // is set to concurrency=1 so uploads land one-by-one and a mid-batch
+  // interruption preserves everything already saved.
+  function onPhotoUploaded(r: UploadResult) {
+    if (r.duplicate || !r.photo) return;
+    const p = r.photo as Photo;
+    setPhotos((prev) => (prev.some((x) => x.id === p.id) ? prev : [...prev, p]));
+  }
+  function chooseFeatured(id: string) {
+    const next = featuredPhotoId === id ? undefined : id;
+    setFeaturedPhotoId(next);
+    save(photos, next);
+  }
+  function removePhoto(id: string) {
+    const next = photos.filter((p) => p.id !== id);
+    const nextFeatured = featuredPhotoId === id ? undefined : featuredPhotoId;
+    setPhotos(next);
+    setFeaturedPhotoId(nextFeatured);
+    save(next, nextFeatured);
   }
 
   async function remove() {
@@ -129,7 +165,7 @@ export default function CoasterEditor({
             View public ↗
           </Link>
           <button
-            onClick={save}
+            onClick={() => save()}
             disabled={busy}
             className="bg-accent text-bg px-3 py-1.5 rounded text-sm disabled:opacity-50"
           >
@@ -241,24 +277,69 @@ export default function CoasterEditor({
       </Field>
 
       <Field label="Description (public, markdown)">
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={6}
-          className="w-full bg-surface border border-border rounded px-3 py-2"
-        />
+        <MarkdownEditor ref={descriptionRef} value={description} onChange={setDescription} />
       </Field>
 
       <Field label="Write-up (personal voice, public, markdown)">
-        <textarea
-          value={writeUp}
-          onChange={(e) => setWriteUp(e.target.value)}
-          rows={4}
-          className="w-full bg-surface border border-border rounded px-3 py-2"
-        />
+        <MarkdownEditor ref={writeUpRef} value={writeUp} onChange={setWriteUp} />
       </Field>
 
-      <Field label="Cover image">
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between flex-wrap gap-2">
+          <h2 className="font-display text-xl">Photos</h2>
+          {photos.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                const sortKey = (p: Photo) => p.filename ?? p.uploadedAt ?? "";
+                const next = [...photos].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+                setPhotos(next);
+                save(next, featuredPhotoId);
+              }}
+              className="text-xs border border-border hover:border-accent hover:text-accent rounded px-2 py-1"
+              title="Sort by filename ascending (oldest camera photos first)"
+            >
+              Sort by filename ↑
+            </button>
+          )}
+        </div>
+        <UploadDropzone
+          endpoint={`/api/coasters/${coaster.slug}/photos`}
+          multiple
+          concurrency={1}
+          onUploaded={onPhotoUploaded}
+          label="Upload photos (multi-select + drag supported)"
+        />
+        <p className="text-xs text-muted">
+          Each photo is saved to the coaster as soon as it uploads — safe to close the tab mid-batch.
+          Duplicate files (same content) are skipped automatically.
+        </p>
+        {photos.length > 0 && (
+          <>
+            <p className="text-xs text-muted">
+              Click ★ to feature a photo as the hero image. Drag ⋮⋮ to reorder. Click ↳ Insert to embed at the cursor in the description or write-up.
+            </p>
+            <SortablePhotos
+              photos={photos}
+              featuredId={featuredPhotoId}
+              onReorder={(next) => {
+                setPhotos(next);
+                save(next, featuredPhotoId);
+              }}
+              onSelectFeatured={chooseFeatured}
+              onRemove={removePhoto}
+              onInsert={(p) => {
+                // Prefer inserting into whichever body is currently non-empty;
+                // fall back to the description (main body). Both refs are wired.
+                const target = writeUp.trim() && !description.trim() ? writeUpRef : descriptionRef;
+                target.current?.insertImage(p.blobUrl);
+              }}
+            />
+          </>
+        )}
+      </section>
+
+      <Field label="Cover image URL (optional — leave blank to use the featured photo)">
         {coverImageUrl && (
           <img
             src={coverImageUrl}
@@ -317,7 +398,7 @@ export default function CoasterEditor({
           Delete coaster
         </button>
         <button
-          onClick={save}
+          onClick={() => save()}
           disabled={busy}
           className="bg-accent text-bg px-3 py-1.5 rounded text-sm disabled:opacity-50"
         >

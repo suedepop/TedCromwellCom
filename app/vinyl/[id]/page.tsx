@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect, RedirectType } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { findRecordBySlugOrId } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
@@ -29,15 +29,12 @@ export default async function RecordDetail({ params }: { params: { id: string } 
   // Canonicalize on the pretty slug so Google sees exactly one URL per
   // record (fixes GSC "Duplicate without user-selected canonical").
   if (record.slug && params.id !== record.slug) {
-    redirect(`/vinyl/${record.slug}`, RedirectType.replace);
+    permanentRedirect(`/vinyl/${record.slug}`);
   }
-  // Diagnostic tag — remove after confirming redirect fires on prod.
-  const debug = `[dbg params.id=${params.id} slug=${record.slug} eq=${params.id === record.slug}]`;
   const artists = record.artists.map((a) => a.name).join(" · ");
 
   return (
     <article className="space-y-8 max-w-3xl mx-auto">
-      <div style={{ display: "none" }} data-dbg={debug}>{debug}</div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(vinylRecordJsonLd(record)) }}

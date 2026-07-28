@@ -20,6 +20,15 @@ export const revalidate = 3600;
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const concert = await findConcertBySlugOrId(params.id);
   if (!concert) return {};
+  // Redirect from raw-id URL to slug URL happens HERE (not in the page
+  // component) because generateMetadata runs BEFORE the streaming render
+  // starts, so throw-based redirects convert to a real HTTP 308. If moved
+  // into the page function, Next embeds the redirect as a client-side
+  // streaming instruction and the initial response is HTTP 200 — Googlebot
+  // wouldn't follow it.
+  if (concert.slug && params.id !== concert.slug) {
+    permanentRedirect(`/concerts/${concert.slug}`);
+  }
   const bands = concertBandLine(concert);
   const date = new Date(concert.date).toLocaleDateString(undefined, { dateStyle: "long" });
   const title = concert.eventName ? `${concert.eventName} — ${bands}` : bands;
@@ -41,12 +50,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function ConcertDetail({ params }: { params: { id: string } }) {
   const concert = await findConcertBySlugOrId(params.id);
   if (!concert) notFound();
-  // Canonicalize on the pretty slug: if we were reached by raw id, 301 to
-  // the slug URL so Google sees exactly one URL per concert. Prevents
-  // "Duplicate without user-selected canonical" from GSC.
-  if (concert.slug && params.id !== concert.slug) {
-    permanentRedirect(`/concerts/${concert.slug}`);
-  }
   const venue = await getVenue(concert.venueId);
   const featured =
     concert.photos.find((p) => p.id === concert.featuredPhotoId) ?? concert.photos[0];

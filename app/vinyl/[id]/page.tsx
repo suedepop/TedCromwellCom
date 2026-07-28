@@ -12,6 +12,15 @@ export const revalidate = 3600;
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const record = await findRecordBySlugOrId(params.id);
   if (!record) return {};
+  // Redirect from raw-id URL to slug URL happens HERE (not in the page
+  // component) because generateMetadata runs BEFORE the streaming render
+  // starts, so throw-based redirects convert to a real HTTP 308. If moved
+  // into the page function, Next embeds the redirect as a client-side
+  // streaming instruction and the initial response is HTTP 200 — Googlebot
+  // wouldn't follow it.
+  if (record.slug && params.id !== record.slug) {
+    permanentRedirect(`/vinyl/${record.slug}`);
+  }
   const artists = record.artists.map((a) => a.name).join(" · ");
   return pageMetadata({
     title: `${artists} — ${record.title}`,
@@ -26,11 +35,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function RecordDetail({ params }: { params: { id: string } }) {
   const record = await findRecordBySlugOrId(params.id);
   if (!record || record.hidden) notFound();
-  // Canonicalize on the pretty slug so Google sees exactly one URL per
-  // record (fixes GSC "Duplicate without user-selected canonical").
-  if (record.slug && params.id !== record.slug) {
-    permanentRedirect(`/vinyl/${record.slug}`);
-  }
   const artists = record.artists.map((a) => a.name).join(" · ");
 
   return (

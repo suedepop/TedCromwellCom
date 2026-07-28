@@ -15,6 +15,12 @@ const TravelMap = dynamicImport(() => import("@/components/travel/TravelMap"), {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const entry = await findTravelEntryBySlugOrId(params.id);
   if (!entry) return {};
+  // Redirect from raw-id URL to slug URL happens HERE (not in the page
+  // component) because generateMetadata runs BEFORE the streaming render
+  // starts, so throw-based redirects convert to a real HTTP 308.
+  if (entry.slug && params.id !== entry.slug) {
+    permanentRedirect(`/travel/${entry.slug}`);
+  }
   const where = [entry.city, entry.state, entry.country].filter(Boolean).join(", ");
   const dateRange =
     entry.endDate && entry.endDate !== entry.startDate
@@ -39,11 +45,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function TravelEntryPage({ params }: { params: { id: string } }) {
   const entry = await findTravelEntryBySlugOrId(params.id);
   if (!entry) notFound();
-  // Canonicalize on the pretty slug: 301 the raw-id URL to the slug URL
-  // so Google sees exactly one canonical URL per travel entry.
-  if (entry.slug && params.id !== entry.slug) {
-    permanentRedirect(`/travel/${entry.slug}`);
-  }
   const featured = entry.photos.find((p) => p.id === entry.featuredPhotoId) ?? entry.photos[0];
   const dateRange =
     entry.endDate && entry.endDate !== entry.startDate

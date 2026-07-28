@@ -33,24 +33,48 @@ const RULES: RouteRule[] = [
 export async function middleware(req: NextRequest) {
   const { pathname, search, origin } = req.nextUrl;
   const rule = RULES.find((r) => pathname.startsWith(r.prefix));
-  if (!rule) return NextResponse.next();
+  if (!rule) {
+    const passthrough = NextResponse.next();
+    passthrough.headers.set("x-mw", `nomatch:${pathname}`);
+    return passthrough;
+  }
   // "/concerts/abc" → "abc"; also handles "/concerts/abc/anything" → don't touch nested paths
   const rest = pathname.slice(rule.prefix.length);
-  if (rest.includes("/") || !rest) return NextResponse.next();
-  if (!rule.isIdShape(rest)) return NextResponse.next();
+  if (rest.includes("/") || !rest) {
+    const p = NextResponse.next();
+    p.headers.set("x-mw", `nested-or-empty:${rest}`);
+    return p;
+  }
+  if (!rule.isIdShape(rest)) {
+    const p = NextResponse.next();
+    p.headers.set("x-mw", `notidshape:${rest}`);
+    return p;
+  }
 
   try {
     const res = await fetch(
       `${origin}/api/resolve-slug?type=${rule.type}&id=${encodeURIComponent(rest)}`,
       { headers: { "user-agent": "middleware-slug-resolver" } },
     );
-    if (!res.ok || res.status === 204) return NextResponse.next();
+    if (!res.ok || res.status === 204) {
+      const p = NextResponse.next();
+      p.headers.set("x-mw", `resolve-${res.status}:${rest}`);
+      return p;
+    }
     const data = (await res.json()) as { slug?: string };
-    if (!data.slug) return NextResponse.next();
+    if (!data.slug) {
+      const p = NextResponse.next();
+      p.headers.set("x-mw", `no-slug:${rest}`);
+      return p;
+    }
     const dest = new URL(`${rule.prefix}${data.slug}${search}`, req.url);
-    return NextResponse.redirect(dest, 308);
-  } catch {
-    return NextResponse.next();
+    const r = NextResponse.redirect(dest, 308);
+    r.headers.set("x-mw", `redirect:${rest}->${data.slug}`);
+    return r;
+  } catch (err) {
+    const p = NextResponse.next();
+    p.headers.set("x-mw", `error:${(err as Error).message}`);
+    return p;
   }
 }
 

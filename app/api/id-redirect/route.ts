@@ -21,9 +21,10 @@ export const dynamic = "force-dynamic";
  * NextResponse.redirect from a route handler DOES emit real HTTP status.
  */
 export async function GET(req: Request) {
-  const u = new URL(req.url);
-  const type = u.searchParams.get("type");
-  const id = u.searchParams.get("id");
+  // Middleware passes these via request headers because req.url reflects
+  // the ORIGINAL client URL (e.g. /vinyl/4760354), not the rewritten path.
+  const type = req.headers.get("x-id-redirect-type");
+  const id = req.headers.get("x-id-redirect-id");
   if (!id || !type) return new Response("bad request", { status: 400 });
 
   try {

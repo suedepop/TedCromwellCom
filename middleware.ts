@@ -36,11 +36,16 @@ export function middleware(req: NextRequest) {
 
   // Rewrite is internal (no fetch), and the target route.ts returns a
   // real 308 that flows back to the client as if it came from this URL.
-  const rewriteUrl = new URL(
-    `/api/id-redirect?type=${rule.type}&id=${encodeURIComponent(rest)}`,
-    req.url,
-  );
-  return NextResponse.rewrite(rewriteUrl);
+  // Pass type + id via REQUEST HEADERS, not query string: the route
+  // handler's req.url reflects the ORIGINAL client URL, not the rewritten
+  // one, so query params added to the rewrite URL are invisible to it.
+  const forwarded = new Headers(req.headers);
+  forwarded.set("x-id-redirect-type", rule.type);
+  forwarded.set("x-id-redirect-id", rest);
+  const rewriteUrl = new URL("/api/id-redirect", req.url);
+  return NextResponse.rewrite(rewriteUrl, {
+    request: { headers: forwarded },
+  });
 }
 
 export const config = {

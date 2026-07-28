@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Middleware: canonicalize raw-id URLs to their pretty slug URLs with HTTP 308.
+ * Middleware: rewrite raw-id URLs to an internal Node.js route that emits
+ * a real HTTP 308 to the pretty slug URL.
  *
- * Why here instead of in the page: Next.js redirects from within a page or
- * generateMetadata run during a streaming response, so Next embeds them as
- * client-side navigation instructions ($RX("NEXT_REDIRECT;...;308")) and the
- * initial response stays HTTP 200. Googlebot doesn't run that JS and keeps
- * indexing both URLs — the exact "Duplicate without user-selected canonical"
- * symptom in Search Console. Middleware runs BEFORE any render, so a
- * NextResponse.redirect() here emits a real 308 with a Location header.
- *
- * Pattern-match FIRST so slug URLs never hit the resolve endpoint. Only
- * URL shapes that look like a raw id are checked:
- *   - concerts / travel: UUID (36 chars, 4 dashes at fixed positions)
- *   - vinyl: all-digits (Discogs release id)
+ * Why this shape (attempt 4, previous attempts documented in git history):
+ * - redirect() from a page or generateMetadata gets embedded in the
+ *   streaming response instead of setting HTTP status (client-side only).
+ * - Middleware on Azure SWA can't fetch same-origin URLs (fetch failed).
+ * - NextResponse.rewrite is INTERNAL routing, no network call — so it
+ *   works on SWA — and the target route handler CAN issue a real 308
+ *   because route handlers don't stream.
  */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DIGITS_RE = /^\d+$/;
@@ -30,63 +26,23 @@ const RULES: RouteRule[] = [
   { prefix: "/travel/", isIdShape: (s) => UUID_RE.test(s), type: "travel" },
 ];
 
-export async function middleware(req: NextRequest) {
-  const { pathname, search, origin } = req.nextUrl;
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
   const rule = RULES.find((r) => pathname.startsWith(r.prefix));
-  if (!rule) {
-    const passthrough = NextResponse.next();
-    passthrough.headers.set("x-mw", `nomatch:${pathname}`);
-    return passthrough;
-  }
-  // "/concerts/abc" → "abc"; also handles "/concerts/abc/anything" → don't touch nested paths
+  if (!rule) return NextResponse.next();
   const rest = pathname.slice(rule.prefix.length);
-  if (rest.includes("/") || !rest) {
-    const p = NextResponse.next();
-    p.headers.set("x-mw", `nested-or-empty:${rest}`);
-    return p;
-  }
-  if (!rule.isIdShape(rest)) {
-    const p = NextResponse.next();
-    p.headers.set("x-mw", `notidshape:${rest}`);
-    return p;
-  }
+  if (!rest || rest.includes("/")) return NextResponse.next();
+  if (!rule.isIdShape(rest)) return NextResponse.next();
 
-  try {
-    // On Azure SWA, `req.nextUrl.origin` sometimes resolves to the internal
-    // container hostname which the outbound fetch can't reach. Build the URL
-    // from the incoming Host header (what the user hit) instead — that
-    // resolves to the public edge which routes back to the same app.
-    const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? new URL(origin).host;
-    const proto = req.headers.get("x-forwarded-proto") ?? "https";
-    const resolveUrl = `${proto}://${host}/api/resolve-slug?type=${rule.type}&id=${encodeURIComponent(rest)}`;
-    const res = await fetch(resolveUrl, {
-      headers: { "user-agent": "middleware-slug-resolver" },
-    });
-    if (!res.ok || res.status === 204) {
-      const p = NextResponse.next();
-      p.headers.set("x-mw", `resolve-${res.status}:${rest}`);
-      return p;
-    }
-    const data = (await res.json()) as { slug?: string };
-    if (!data.slug) {
-      const p = NextResponse.next();
-      p.headers.set("x-mw", `no-slug:${rest}`);
-      return p;
-    }
-    const dest = new URL(`${rule.prefix}${data.slug}${search}`, req.url);
-    const r = NextResponse.redirect(dest, 308);
-    r.headers.set("x-mw", `redirect:${rest}->${data.slug}`);
-    return r;
-  } catch (err) {
-    const p = NextResponse.next();
-    p.headers.set("x-mw", `error:${(err as Error).message}`);
-    return p;
-  }
+  // Rewrite is internal (no fetch), and the target route.ts returns a
+  // real 308 that flows back to the client as if it came from this URL.
+  const rewriteUrl = new URL(
+    `/api/id-redirect?type=${rule.type}&id=${encodeURIComponent(rest)}`,
+    req.url,
+  );
+  return NextResponse.rewrite(rewriteUrl);
 }
 
 export const config = {
-  // Only run for the three detail-page prefixes; skip everything else so
-  // the middleware overhead is zero for static assets, _next chunks, admin,
-  // API routes, and slug URLs.
   matcher: ["/concerts/:path*", "/vinyl/:path*", "/travel/:path*"],
 };

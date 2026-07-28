@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { findRecordBySlugOrId } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
@@ -26,6 +26,11 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function RecordDetail({ params }: { params: { id: string } }) {
   const record = await findRecordBySlugOrId(params.id);
   if (!record || record.hidden) notFound();
+  // Canonicalize on the pretty slug: 301 the raw-id URL to the slug URL
+  // so Google sees exactly one canonical URL per record.
+  if (record.slug && params.id !== record.slug) {
+    permanentRedirect(`/vinyl/${record.slug}`);
+  }
   const artists = record.artists.map((a) => a.name).join(" · ");
 
   return (

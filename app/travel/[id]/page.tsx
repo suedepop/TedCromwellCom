@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import PhotoLightbox from "@/components/media/PhotoLightbox";
 import PostBody from "@/components/blog/PostBody";
 import { findTravelEntryBySlugOrId } from "@/lib/travel";
@@ -39,6 +39,11 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function TravelEntryPage({ params }: { params: { id: string } }) {
   const entry = await findTravelEntryBySlugOrId(params.id);
   if (!entry) notFound();
+  // Canonicalize on the pretty slug: 301 the raw-id URL to the slug URL
+  // so Google sees exactly one canonical URL per travel entry.
+  if (entry.slug && params.id !== entry.slug) {
+    permanentRedirect(`/travel/${entry.slug}`);
+  }
   const featured = entry.photos.find((p) => p.id === entry.featuredPhotoId) ?? entry.photos[0];
   const dateRange =
     entry.endDate && entry.endDate !== entry.startDate

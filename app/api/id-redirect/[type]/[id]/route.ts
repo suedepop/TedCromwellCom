@@ -44,16 +44,16 @@ export async function GET(
       if (t && t.slug && t.slug !== id) slug = t.slug;
     }
     if (!slug) return new Response("no slug", { status: 404 });
-    // Build the Location URL from the ORIGINAL client host, not req.url —
-    // inside the SWA container, req.url resolves to https://localhost:8080
-    // which then leaks back to the client as an unusable redirect target.
-    const host =
-      req.headers.get("x-forwarded-host") ??
-      req.headers.get("host") ??
-      new URL(req.url).host;
-    const proto = req.headers.get("x-forwarded-proto") ?? "https";
-    const dest = `${proto}://${host}/${section}/${slug}`;
-    return NextResponse.redirect(dest, 308);
+    // Return a RELATIVE Location header. Both Azure SWA's req.url and its
+    // x-forwarded-* headers give us the internal container host
+    // (localhost:8080), which would leak to the client as an unusable
+    // absolute redirect. Relative Location values are valid per RFC 7231
+    // and browsers/Googlebot resolve them against the requested URL
+    // (which the CLIENT knows correctly).
+    return new Response(null, {
+      status: 308,
+      headers: { Location: `/${section}/${slug}` },
+    });
   } catch (err) {
     return new Response(`error: ${(err as Error).message}`, { status: 500 });
   }

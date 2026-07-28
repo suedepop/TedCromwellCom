@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, redirect, RedirectType } from "next/navigation";
 import Link from "next/link";
 import { findRecordBySlugOrId } from "@/lib/records";
 import { pageMetadata } from "@/lib/metadata";
@@ -26,15 +26,18 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function RecordDetail({ params }: { params: { id: string } }) {
   const record = await findRecordBySlugOrId(params.id);
   if (!record || record.hidden) notFound();
-  // Canonicalize on the pretty slug: 301 the raw-id URL to the slug URL
-  // so Google sees exactly one canonical URL per record.
+  // Canonicalize on the pretty slug so Google sees exactly one URL per
+  // record (fixes GSC "Duplicate without user-selected canonical").
   if (record.slug && params.id !== record.slug) {
-    permanentRedirect(`/vinyl/${record.slug}`);
+    redirect(`/vinyl/${record.slug}`, RedirectType.replace);
   }
+  // Diagnostic tag — remove after confirming redirect fires on prod.
+  const debug = `[dbg params.id=${params.id} slug=${record.slug} eq=${params.id === record.slug}]`;
   const artists = record.artists.map((a) => a.name).join(" · ");
 
   return (
     <article className="space-y-8 max-w-3xl mx-auto">
+      <div style={{ display: "none" }} data-dbg={debug}>{debug}</div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(vinylRecordJsonLd(record)) }}

@@ -99,7 +99,43 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
         </div>
       </header>
 
-      {s?.description && <PostBody content={s.description} />}
+      {(() => {
+        // Prefer whichever body is longer — Wikipedia's extract when present,
+        // otherwise the manually-authored / encyclopedic description. Both
+        // render through PostBody so the same markdown pipeline handles them.
+        const wiki = s?.wikipediaExtract?.trim() ?? "";
+        const own = s?.description?.trim() ?? "";
+        const body = wiki.length > own.length ? wiki : own;
+        if (!body) return null;
+        return (
+          <div className="space-y-2">
+            <PostBody content={body} />
+            {body === wiki && s?.wikipediaUrl && (
+              <p className="text-xs text-muted">
+                Extract from{" "}
+                <a
+                  href={s.wikipediaUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-accent underline"
+                >
+                  Wikipedia
+                </a>
+                {s.wikipediaTitle ? `: “${s.wikipediaTitle}”` : ""} (
+                <a
+                  href="https://creativecommons.org/licenses/by-sa/4.0/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-accent underline"
+                >
+                  CC BY-SA 4.0
+                </a>
+                ).
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       {artist.concerts.length > 0 && (
         <section className="space-y-3">

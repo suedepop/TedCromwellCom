@@ -205,6 +205,14 @@ export interface Artist {
   description?: string;             // public markdown bio / write-up
   imageUrl?: string;                // optional artist portrait URL (Blob, Wikipedia, etc.)
   notes?: string;                   // private admin notes
+  /** Long-form extract pulled from Wikipedia's REST summary endpoint. Kept
+   *  separate from description so a hand-edited description is never
+   *  clobbered by an enrichment run; the public page picks whichever is
+   *  longer to render as the main body. */
+  wikipediaExtract?: string;
+  wikipediaUrl?: string;            // canonical article URL (attribution + backfill target)
+  wikipediaTitle?: string;          // article title as fetched, for update tracking
+  enrichedAt?: string;              // ISO timestamp of the last enrichment pass
   createdAt: string;
   updatedAt: string;
 }

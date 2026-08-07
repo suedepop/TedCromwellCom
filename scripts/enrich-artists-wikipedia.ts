@@ -32,26 +32,86 @@ const WIKI_DELAY_MS = 200;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Normalize both sides of a name comparison. Handles:
+ *   - Curly quotes (U+2018/2019/201C/201D) → straight ASCII '/"
+ *     (Discogs stores "Guns N' Roses" with a curly apostrophe;
+ *     Wikipedia titles use straight)
+ *   - Discogs disambiguator suffix "(N)" (e.g. "Europe (2)")
+ *   - Trailing whitespace / repeated spaces
+ */
+export function normalizeName(s: string): string {
+  return s
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+\(\d+\)\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Insert spaces at camelCase and letter↔digit boundaries. "NewOrder" →
+ *  "New Order", "Blink182" → "Blink 182". Used as an ADDITIONAL search
+ *  variant when the split differs from the original (concatenated brand
+ *  names are common in Discogs). */
+export function splitConcatenated(s: string): string {
+  return s
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([a-zA-Z])(\d)/g, "$1 $2")
+    .replace(/(\d)([a-zA-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * Reject search-based candidates whose article title doesn't overlap with
  * the artist name. Catches cases where the fallback search returned a
  * completely unrelated band (e.g. "Stone Horses" → "Band of Horses").
  *
- * Rule: after lowercasing and trimming, the first two words of the artist
- * name (or the one word if it's a single-word name) must appear in
- * sequence somewhere in the article title, or the article title must be a
- * prefix of the artist name. Also allows an exact case-insensitive match.
+ * Rule: after normalizing (curly quotes, disambiguators) and lowercasing,
+ * the first two words of the artist name (or the one word if it's a
+ * single-word name) must appear in sequence somewhere in the article
+ * title, or the article title must be a prefix of the artist name.
  *
  * Only applied to search-derived candidates — MB-derived candidates are
  * human-curated and always trusted.
  */
+/** Aggressive canonicalization for comparison: lowercase, strip "The "
+ *  prefix, replace all non-alphanumeric with spaces, then collapse. */
+function comparableForm(s: string): string {
+  return normalizeName(s)
+    .toLowerCase()
+    .replace(/^the\s+/, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Whitespace-free canonical form — folds "Blink182" and "Blink-182",
+ *  "NewOrder" and "New Order", "The Misfits" and "Misfits" to the same
+ *  string for equality checks. Runs through comparableForm first so
+ *  the leading "The " gets stripped consistently. */
+function fullyStripped(s: string): string {
+  return comparableForm(s).replace(/[^a-z0-9]/g, "");
+}
+
 export function titleMatchesArtist(artistName: string, articleTitle: string): boolean {
-  const a = artistName.toLowerCase().trim();
-  const t = articleTitle.toLowerCase().trim();
-  if (!a || !t) return false;
-  if (a === t) return true;
-  const words = a.split(/\s+/);
-  const prefix = words.slice(0, Math.min(2, words.length)).join(" ");
-  return t.includes(prefix) || prefix.includes(t);
+  const aStripped = fullyStripped(artistName);
+  const tStripped = fullyStripped(articleTitle);
+  if (!aStripped || !tStripped) return false;
+  // Exact stripped equality catches "Blink182" ↔ "Blink-182",
+  // "NewOrder" ↔ "New Order", "Guns N' Roses" ↔ "Guns N' Roses" (curly vs
+  // straight apostrophe), etc.
+  if (aStripped === tStripped) return true;
+  // Prefix-startsWith on stripped forms catches "NewOrder" ↔
+  // "New Order (band)" and "Blink182" ↔ "Blink-182 (album)".
+  if (tStripped.startsWith(aStripped) || aStripped.startsWith(tStripped)) return true;
+  // First-two-words prefix check for multi-word artist names — catches
+  // "Elvis Costello & The Imposters" ↔ "Elvis Costello discography".
+  const words = comparableForm(artistName).split(" ").filter(Boolean);
+  if (words.length >= 2) {
+    const halfStripped = words.slice(0, 2).join("").replace(/[^a-z0-9]/g, "");
+    if (halfStripped && tStripped.includes(halfStripped)) return true;
+  }
+  return false;
 }
 
 interface Result {
@@ -138,9 +198,16 @@ async function main() {
       }
 
       // Always add name-based candidates as fallbacks after any MB hit.
-      candidates.push({ source: "resolved-via-search", title: artist.name });
-      candidates.push({ source: "resolved-via-search", title: `${artist.name} (band)` });
-      candidates.push({ source: "resolved-via-search", title: `${artist.name} (musician)` });
+      // Use normalized name (straight quotes, no disambiguator suffix)
+      // AND a camelCase-split variant when the artist name is concatenated.
+      const norm = normalizeName(artist.name);
+      const split = splitConcatenated(norm);
+      const nameVariants = split !== norm ? [norm, split] : [norm];
+      for (const v of nameVariants) {
+        candidates.push({ source: "resolved-via-search", title: v });
+        candidates.push({ source: "resolved-via-search", title: `${v} (band)` });
+        candidates.push({ source: "resolved-via-search", title: `${v} (musician)` });
+      }
 
       let picked: Awaited<ReturnType<typeof fetchWikipediaExtract>> = null;
       let pickedSource: Result["outcome"] = "no-search-match";
@@ -163,18 +230,26 @@ async function main() {
 
       // Search-based last resort — bias toward music with a "band" query.
       if (!picked) {
-        if (wikiCallsSinceSleep > 0) await sleep(WIKI_DELAY_MS);
-        wikiCallsSinceSleep++;
-        const hits = await searchWikipedia(`${artist.name} band`, 3);
-        for (const h of hits) {
+        // Try both normalized and camelCase-split variants so
+        // "NewOrder" gets searched as "New Order band" too.
+        const norm2 = normalizeName(artist.name);
+        const split2 = splitConcatenated(norm2);
+        const queries = split2 !== norm2 ? [norm2, split2] : [norm2];
+        for (const q of queries) {
           if (wikiCallsSinceSleep > 0) await sleep(WIKI_DELAY_MS);
           wikiCallsSinceSleep++;
-          const r = await fetchWikipediaExtract(h.title);
-          if (!r || r.isDisambiguation || !r.extract) continue;
-          if (!titleMatchesArtist(artist.name, r.title)) continue;
-          picked = r;
-          pickedSource = "resolved-via-search";
-          break;
+          const hits = await searchWikipedia(`${q} band`, 3);
+          for (const h of hits) {
+            if (wikiCallsSinceSleep > 0) await sleep(WIKI_DELAY_MS);
+            wikiCallsSinceSleep++;
+            const r = await fetchWikipediaExtract(h.title);
+            if (!r || r.isDisambiguation || !r.extract) continue;
+            if (!titleMatchesArtist(artist.name, r.title)) continue;
+            picked = r;
+            pickedSource = "resolved-via-search";
+            break;
+          }
+          if (picked) break;
         }
       }
 

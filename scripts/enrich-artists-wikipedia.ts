@@ -31,6 +31,29 @@ const MB_DELAY_MS = 1100;
 const WIKI_DELAY_MS = 200;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Reject search-based candidates whose article title doesn't overlap with
+ * the artist name. Catches cases where the fallback search returned a
+ * completely unrelated band (e.g. "Stone Horses" → "Band of Horses").
+ *
+ * Rule: after lowercasing and trimming, the first two words of the artist
+ * name (or the one word if it's a single-word name) must appear in
+ * sequence somewhere in the article title, or the article title must be a
+ * prefix of the artist name. Also allows an exact case-insensitive match.
+ *
+ * Only applied to search-derived candidates — MB-derived candidates are
+ * human-curated and always trusted.
+ */
+export function titleMatchesArtist(artistName: string, articleTitle: string): boolean {
+  const a = artistName.toLowerCase().trim();
+  const t = articleTitle.toLowerCase().trim();
+  if (!a || !t) return false;
+  if (a === t) return true;
+  const words = a.split(/\s+/);
+  const prefix = words.slice(0, Math.min(2, words.length)).join(" ");
+  return t.includes(prefix) || prefix.includes(t);
+}
+
 interface Result {
   slug: string;
   name: string;
@@ -126,11 +149,16 @@ async function main() {
         if (wikiCallsSinceSleep > 0) await sleep(WIKI_DELAY_MS);
         wikiCallsSinceSleep++;
         const r = await fetchWikipediaExtract(c.title);
-        if (r && !r.isDisambiguation && r.extract) {
-          picked = r;
-          pickedSource = c.source;
-          break;
+        if (!r || r.isDisambiguation || !r.extract) continue;
+        // Trust MB URLs unconditionally; reject search-derived matches whose
+        // title doesn't overlap with the artist name (catches wrong-band
+        // hits like Stone Horses → Band of Horses).
+        if (c.source !== "resolved-via-mb" && !titleMatchesArtist(artist.name, r.title)) {
+          continue;
         }
+        picked = r;
+        pickedSource = c.source;
+        break;
       }
 
       // Search-based last resort — bias toward music with a "band" query.
@@ -138,11 +166,15 @@ async function main() {
         if (wikiCallsSinceSleep > 0) await sleep(WIKI_DELAY_MS);
         wikiCallsSinceSleep++;
         const hits = await searchWikipedia(`${artist.name} band`, 3);
-        if (hits[0]) {
+        for (const h of hits) {
           if (wikiCallsSinceSleep > 0) await sleep(WIKI_DELAY_MS);
           wikiCallsSinceSleep++;
-          picked = await fetchWikipediaExtract(hits[0].title);
-          if (picked) pickedSource = "resolved-via-search";
+          const r = await fetchWikipediaExtract(h.title);
+          if (!r || r.isDisambiguation || !r.extract) continue;
+          if (!titleMatchesArtist(artist.name, r.title)) continue;
+          picked = r;
+          pickedSource = "resolved-via-search";
+          break;
         }
       }
 

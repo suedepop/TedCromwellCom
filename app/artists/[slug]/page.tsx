@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import ConcertCard from "@/components/concerts/ConcertCard";
 import RecordCard from "@/components/vinyl/RecordCard";
@@ -11,6 +12,7 @@ import {
 } from "@/lib/artists";
 import { pageMetadata } from "@/lib/metadata";
 import { artistMusicGroupJsonLd, jsonLdScript } from "@/lib/jsonld";
+import type { DiscographyRelease, DiscographyReleaseType } from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -159,9 +161,111 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
         </section>
       )}
 
+      {s?.discography && s.discography.length > 0 && (
+        <DiscographySection releases={s.discography} />
+      )}
+
       {artist.concerts.length === 0 && artist.records.length === 0 && (
         <p className="text-muted">No content yet for this artist.</p>
       )}
     </article>
+  );
+}
+
+// Order in which release-type groups appear on the page. Primary works
+// (Album/EP) up top; supplementary material (Compilations, Live, etc.)
+// grouped inside a collapsed <details> so long discographies stay readable.
+const PRIMARY_TYPES: DiscographyReleaseType[] = ["Album", "EP", "Single"];
+const SECONDARY_TYPES: DiscographyReleaseType[] = [
+  "Live",
+  "Soundtrack",
+  "Compilation",
+  "Remix",
+  "Broadcast",
+  "Demo",
+  "Other",
+];
+
+function DiscographySection({ releases }: { releases: DiscographyRelease[] }) {
+  const groups = new Map<DiscographyReleaseType, DiscographyRelease[]>();
+  for (const r of releases) {
+    const list = groups.get(r.type) ?? [];
+    list.push(r);
+    groups.set(r.type, list);
+  }
+  const ownedCount = releases.filter((r) => r.ownedRecordSlug).length;
+  return (
+    <section className="space-y-4">
+      <header className="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 className="font-display text-2xl">Discography</h2>
+        <p className="text-xs text-muted">
+          {releases.length} releases from MusicBrainz
+          {ownedCount > 0 && (
+            <>
+              {" "}
+              · <span className="text-accent">★</span> {ownedCount} in my collection
+            </>
+          )}
+        </p>
+      </header>
+      {PRIMARY_TYPES.map((t) => {
+        const list = groups.get(t);
+        if (!list || list.length === 0) return null;
+        return <DiscographyGroup key={t} type={t} releases={list} />;
+      })}
+      {SECONDARY_TYPES.some((t) => (groups.get(t)?.length ?? 0) > 0) && (
+        <details className="text-sm">
+          <summary className="cursor-pointer text-muted hover:text-accent">
+            More: singles, compilations, live &amp; other releases
+          </summary>
+          <div className="mt-3 space-y-4">
+            {SECONDARY_TYPES.map((t) => {
+              const list = groups.get(t);
+              if (!list || list.length === 0) return null;
+              return <DiscographyGroup key={t} type={t} releases={list} />;
+            })}
+          </div>
+        </details>
+      )}
+    </section>
+  );
+}
+
+function DiscographyGroup({
+  type,
+  releases,
+}: {
+  type: DiscographyReleaseType;
+  releases: DiscographyRelease[];
+}) {
+  const label = type === "EP" ? "EPs" : `${type}s`;
+  return (
+    <div className="space-y-1">
+      <h3 className="font-display text-lg">{label} ({releases.length})</h3>
+      <ul className="text-sm">
+        {releases.map((r) => (
+          <li key={r.musicbrainzId} className="flex items-baseline gap-2 py-0.5">
+            <span className="text-muted font-mono text-xs w-12 shrink-0">{r.year ?? "—"}</span>
+            <span className="flex-1 min-w-0">
+              {r.ownedRecordSlug ? (
+                <Link
+                  href={`/vinyl/${r.ownedRecordSlug}`}
+                  className="text-accent hover:underline"
+                  title="In my collection — open the vinyl page"
+                >
+                  <span className="mr-1">★</span>
+                  {r.title}
+                </Link>
+              ) : (
+                <span>{r.title}</span>
+              )}
+              {r.disambiguation && (
+                <span className="text-muted text-xs"> — {r.disambiguation}</span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

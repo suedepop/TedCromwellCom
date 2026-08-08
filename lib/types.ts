@@ -213,8 +213,36 @@ export interface Artist {
   wikipediaUrl?: string;            // canonical article URL (attribution + backfill target)
   wikipediaTitle?: string;          // article title as fetched, for update tracking
   enrichedAt?: string;              // ISO timestamp of the last enrichment pass
+  /** Full release-group list from MusicBrainz — populated by the Phase 2
+   *  discography enrichment. Each item may carry an `ownedRecordSlug`
+   *  when we hold a matching pressing in the records collection. */
+  discography?: DiscographyRelease[];
   createdAt: string;
   updatedAt: string;
+}
+
+export type DiscographyReleaseType =
+  | "Album"
+  | "EP"
+  | "Single"
+  | "Compilation"
+  | "Live"
+  | "Soundtrack"
+  | "Remix"
+  | "Broadcast"
+  | "Demo"
+  | "Other";
+
+export interface DiscographyRelease {
+  musicbrainzId: string;            // release-group MBID (stable across re-issues)
+  title: string;
+  type: DiscographyReleaseType;
+  year?: number;                    // from first-release-date (may be omitted for unreleased)
+  disambiguation?: string;          // MB's per-release disambiguator, e.g. "US version"
+  /** When we own a matching record in /vinyl, its slug so the page can
+   *  render a cross-link. Populated at enrichment time by fuzzy-matching
+   *  title + year against the records collection. */
+  ownedRecordSlug?: string;
 }
 
 export interface Park {

@@ -12,7 +12,7 @@ import {
 } from "@/lib/artists";
 import { pageMetadata } from "@/lib/metadata";
 import { artistMusicGroupJsonLd, jsonLdScript } from "@/lib/jsonld";
-import type { DiscographyRelease, DiscographyReleaseType } from "@/lib/types";
+import type { BandMember, DiscographyRelease, DiscographyReleaseType } from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -161,6 +161,22 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
         </section>
       )}
 
+      {s?.members && s.members.length > 0 && (
+        <MembersSection
+          heading="Members"
+          subtitle={`${s.members.length} people from MusicBrainz`}
+          people={s.members}
+        />
+      )}
+
+      {s?.partOf && s.partOf.length > 0 && (
+        <MembersSection
+          heading={s.artistType === "Person" ? "Bands" : "Also a member of"}
+          subtitle={`${s.partOf.length} groups from MusicBrainz`}
+          people={s.partOf}
+        />
+      )}
+
       {s?.discography && s.discography.length > 0 && (
         <DiscographySection releases={s.discography} />
       )}
@@ -169,6 +185,62 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
         <p className="text-muted">No content yet for this artist.</p>
       )}
     </article>
+  );
+}
+
+function formatMemberYears(m: BandMember): string {
+  if (m.from && m.to) return `${m.from}–${m.to}`;
+  if (m.from && !m.to) return `${m.from}–`;
+  if (!m.from && m.to) return `until ${m.to}`;
+  return "";
+}
+
+function MembersSection({
+  heading,
+  subtitle,
+  people,
+}: {
+  heading: string;
+  subtitle: string;
+  people: BandMember[];
+}) {
+  return (
+    <section className="space-y-3">
+      <header className="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 className="font-display text-2xl">{heading}</h2>
+        <p className="text-xs text-muted">{subtitle}</p>
+      </header>
+      <ul className="text-sm space-y-1.5">
+        {people.map((m, i) => {
+          const years = formatMemberYears(m);
+          return (
+            <li
+              key={`${m.musicbrainzId ?? m.name}-${i}`}
+              className="flex items-baseline gap-2 flex-wrap"
+            >
+              <span className="text-muted font-mono text-xs w-24 shrink-0">{years || "—"}</span>
+              <span className="min-w-0">
+                {m.storedArtistSlug ? (
+                  <Link
+                    href={`/artists/${m.storedArtistSlug}`}
+                    className="text-accent hover:underline"
+                    title="On this site — open their page"
+                  >
+                    <span className="mr-1">★</span>
+                    {m.name}
+                  </Link>
+                ) : (
+                  <span>{m.name}</span>
+                )}
+                {m.roles && m.roles.length > 0 && (
+                  <span className="text-muted text-xs"> — {m.roles.join(", ")}</span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

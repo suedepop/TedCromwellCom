@@ -217,8 +217,32 @@ export interface Artist {
    *  discography enrichment. Each item may carry an `ownedRecordSlug`
    *  when we hold a matching pressing in the records collection. */
   discography?: DiscographyRelease[];
+  /** MB artist type: "Group" for bands, "Person" for solo artists,
+   *  "Character"/"Choir"/"Orchestra" for others. Determines how the
+   *  members/partOf sections are labeled on the public page. Populated
+   *  by the Phase 3 member enrichment alongside members/partOf. */
+  artistType?: string;
+  /** People who are members of this band (populated when artistType is
+   *  Group). Each may carry a storedArtistSlug cross-link. */
+  members?: BandMember[];
+  /** Bands this artist is a member of (populated when artistType is
+   *  Person). Same shape as members[]. */
+  partOf?: BandMember[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BandMember {
+  musicbrainzId?: string;           // the other artist's MBID (person or group)
+  name: string;
+  /** Instrument/role labels from MB relationship attributes:
+   *  ["lead vocals", "guitar", "keyboards"], etc. */
+  roles?: string[];
+  from?: number;                    // year the relationship began
+  to?: number;                      // year it ended (omitted if still current)
+  /** Cross-link: slug of a matching stored artist when we have one for
+   *  this member. Populated at enrichment time. */
+  storedArtistSlug?: string;
 }
 
 export type DiscographyReleaseType =

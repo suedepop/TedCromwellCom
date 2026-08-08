@@ -67,6 +67,75 @@ export function wikipediaUrlFromMbArtist(artist: MbArtistDetail): string | null 
   return wikiRels.find((u) => /^https?:\/\/en\.wikipedia\.org\//i.test(u)) ?? wikiRels[0];
 }
 
+export interface MbArtistRel {
+  type: string;                              // e.g. "member of band"
+  direction: "forward" | "backward";
+  begin?: string | null;                     // "1985", "1985-04", "1985-04-08"
+  end?: string | null;
+  attributes?: string[];                     // ["lead vocals", "guitar"]
+  artist?: {
+    id: string;
+    name: string;
+    type?: string | null;
+    disambiguation?: string;
+  };
+}
+
+export interface MbArtistFull extends MbArtistDetail {
+  relations?: (MbArtistRel & { url?: { resource: string } })[];
+}
+
+/**
+ * Fetch an artist with BOTH URL relationships (for the Wikipedia lookup)
+ * and artist relationships (for members / groups). One request replaces
+ * the previous fetchArtistWithUrls when we want everything.
+ */
+export async function fetchArtistFull(mbid: string): Promise<MbArtistFull | null> {
+  const url = `${MB_BASE}${mbid}?inc=url-rels+artist-rels&fmt=json`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(url, {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+    });
+    if (res.status === 404) return null;
+    if (res.ok) {
+      return (await res.json()) as MbArtistFull;
+    }
+    if (res.status === 503 || res.status === 429) {
+      await sleep(2000 * (attempt + 1));
+      continue;
+    }
+    throw new Error(`musicbrainz ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  throw new Error("musicbrainz: too many retries");
+}
+
+/**
+ * Filter "member of band" relations from an MB artist's relations list.
+ * Returns { members, partOf } — members are the OTHER artists when the
+ * queried artist is a group; partOf are the bands when the queried
+ * artist is a person. We compute both from the direction field so the
+ * caller doesn't have to think about it.
+ */
+export function membershipRelations(artist: MbArtistFull): {
+  members: MbArtistRel[];
+  partOf: MbArtistRel[];
+} {
+  const rels = (artist.relations ?? []).filter(
+    (r): r is MbArtistRel => r.type === "member of band" && !!r.artist,
+  );
+  const members: MbArtistRel[] = [];
+  const partOf: MbArtistRel[] = [];
+  for (const r of rels) {
+    // In MB: "X is a member of Y". The forward direction on X (person)
+    // points to Y (band). When we query a person, forward = groups they
+    // belong to. When we query a group, backward = the persons who are
+    // members.
+    if (r.direction === "backward") members.push(r);
+    else partOf.push(r);
+  }
+  return { members, partOf };
+}
+
 export interface MbReleaseGroup {
   id: string;                           // release-group MBID
   title: string;

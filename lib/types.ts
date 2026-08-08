@@ -228,6 +228,10 @@ export interface Artist {
   /** Bands this artist is a member of (populated when artistType is
    *  Person). Same shape as members[]. */
   partOf?: BandMember[];
+  /** Non-membership artist-artist relationships from MusicBrainz:
+   *  collaborations, subgroups/offshoots, renames, supporting
+   *  musicians. Bucketed on the page by relation type. */
+  relatedArtists?: RelatedArtist[];
   createdAt: string;
   updatedAt: string;
 }
@@ -243,6 +247,30 @@ export interface BandMember {
   /** Cross-link: slug of a matching stored artist when we have one for
    *  this member. Populated at enrichment time. */
   storedArtistSlug?: string;
+}
+
+/** Non-membership relationship kinds we care to surface on artist pages.
+ *  Stored verbatim from MusicBrainz so we can add new buckets later
+ *  without a data migration. */
+export type RelatedArtistRelation =
+  | "collaboration"
+  | "subgroup"
+  | "supporting musician"
+  | "artist rename"
+  | "voice actor"
+  | "other";
+
+export interface RelatedArtist {
+  musicbrainzId?: string;           // the other artist's MBID
+  name: string;
+  relation: RelatedArtistRelation;
+  /** MB relationship direction, stored so a renamed-from can be
+   *  rendered as "earlier" vs a renamed-to as "later". For
+   *  collaborations the direction has no meaning and is ignored. */
+  direction?: "forward" | "backward";
+  from?: number;
+  to?: number;
+  storedArtistSlug?: string;        // set when we host that artist as a stored page
 }
 
 export type DiscographyReleaseType =

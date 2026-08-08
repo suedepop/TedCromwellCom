@@ -136,6 +136,31 @@ export function membershipRelations(artist: MbArtistFull): {
   return { members, partOf };
 }
 
+/**
+ * MB artist-artist relation types we surface as "related artists" on
+ * the site — collaborations, subgroups/offshoots, renames, session
+ * work. Kept as a set so `relatedArtistRelations` can filter in O(1).
+ * "member of band" is handled separately by `membershipRelations`.
+ */
+const RELATED_TYPES: ReadonlySet<string> = new Set([
+  "collaboration",
+  "subgroup",
+  "supporting musician",
+  "artist rename",
+  "voice actor",
+]);
+
+/**
+ * Filter the "other" artist-artist relationships from an MB artist —
+ * anything in RELATED_TYPES. Returns raw MbArtistRel objects; the
+ * enrichment script maps them into our narrower RelatedArtist shape.
+ */
+export function relatedArtistRelations(artist: MbArtistFull): MbArtistRel[] {
+  return (artist.relations ?? []).filter(
+    (r): r is MbArtistRel => RELATED_TYPES.has(r.type) && !!r.artist,
+  );
+}
+
 export interface MbReleaseGroup {
   id: string;                           // release-group MBID
   title: string;

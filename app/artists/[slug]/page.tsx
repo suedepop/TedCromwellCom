@@ -12,7 +12,13 @@ import {
 } from "@/lib/artists";
 import { pageMetadata } from "@/lib/metadata";
 import { artistMusicGroupJsonLd, jsonLdScript } from "@/lib/jsonld";
-import type { BandMember, DiscographyRelease, DiscographyReleaseType } from "@/lib/types";
+import type {
+  BandMember,
+  DiscographyRelease,
+  DiscographyReleaseType,
+  RelatedArtist,
+  RelatedArtistRelation,
+} from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -181,6 +187,10 @@ export default async function ArtistPage({ params }: { params: { slug: string } 
         <DiscographySection releases={s.discography} />
       )}
 
+      {s?.relatedArtists && s.relatedArtists.length > 0 && (
+        <RelatedArtistsSection related={s.relatedArtists} />
+      )}
+
       {artist.concerts.length === 0 && artist.records.length === 0 && (
         <p className="text-muted">No content yet for this artist.</p>
       )}
@@ -193,6 +203,93 @@ function formatMemberYears(m: BandMember): string {
   if (m.from && !m.to) return `${m.from}–`;
   if (!m.from && m.to) return `until ${m.to}`;
   return "";
+}
+
+// Order of related-artist buckets on the page, with the label for each.
+const RELATED_BUCKETS: { relation: RelatedArtistRelation; label: string }[] = [
+  { relation: "collaboration", label: "Collaborations" },
+  { relation: "subgroup", label: "Subgroups & offshoots" },
+  { relation: "artist rename", label: "Renamed to / from" },
+  { relation: "supporting musician", label: "Supporting musicians" },
+  { relation: "voice actor", label: "Voice acting" },
+  { relation: "other", label: "Other" },
+];
+
+function formatRelatedYears(r: RelatedArtist): string {
+  if (r.from && r.to) return `${r.from}–${r.to}`;
+  if (r.from && !r.to) return `${r.from}–`;
+  if (!r.from && r.to) return `until ${r.to}`;
+  return "";
+}
+
+function RelatedArtistsSection({ related }: { related: RelatedArtist[] }) {
+  const groups = new Map<RelatedArtistRelation, RelatedArtist[]>();
+  for (const r of related) {
+    const list = groups.get(r.relation) ?? [];
+    list.push(r);
+    groups.set(r.relation, list);
+  }
+  const linkedCount = related.filter((r) => r.storedArtistSlug).length;
+  return (
+    <section className="space-y-3">
+      <header className="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 className="font-display text-2xl">Related artists</h2>
+        <p className="text-xs text-muted">
+          {related.length} from MusicBrainz
+          {linkedCount > 0 && (
+            <>
+              {" "}
+              · <span className="text-accent">★</span> {linkedCount} on this site
+            </>
+          )}
+        </p>
+      </header>
+      <div className="space-y-4">
+        {RELATED_BUCKETS.map(({ relation, label }) => {
+          const list = groups.get(relation);
+          if (!list || list.length === 0) return null;
+          return (
+            <div key={relation} className="space-y-1">
+              <h3 className="font-display text-lg">
+                {label} ({list.length})
+              </h3>
+              <ul className="text-sm space-y-1">
+                {list.map((r, i) => {
+                  const years = formatRelatedYears(r);
+                  return (
+                    <li
+                      key={`${r.musicbrainzId ?? r.name}-${i}`}
+                      className="flex items-baseline gap-2 flex-wrap"
+                    >
+                      {years && (
+                        <span className="text-muted font-mono text-xs w-24 shrink-0">
+                          {years}
+                        </span>
+                      )}
+                      <span className="min-w-0">
+                        {r.storedArtistSlug ? (
+                          <Link
+                            href={`/artists/${r.storedArtistSlug}`}
+                            className="text-accent hover:underline"
+                            title="On this site — open their page"
+                          >
+                            <span className="mr-1">★</span>
+                            {r.name}
+                          </Link>
+                        ) : (
+                          <span>{r.name}</span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function MembersSection({
